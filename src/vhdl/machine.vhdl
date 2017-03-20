@@ -93,6 +93,8 @@ entity machine is
          sclk_o : out std_logic;
          mosi_o : out std_logic;
          miso_i : in  std_logic;
+         card_present : in std_logic;
+         card_write_prot : in std_logic;
 
          ---------------------------------------------------------------------------
          -- Lines for other devices that we handle here
@@ -542,6 +544,8 @@ architecture Behavioral of machine is
           sclk_o : out std_logic;
           mosi_o : out std_logic;
           miso_i : in  std_logic;
+          card_present : in std_logic;
+          card_write_prot : in std_logic;
 
           ---------------------------------------------------------------------------
           -- IO port to far call stack
@@ -1138,6 +1142,8 @@ begin
     sclk_o => sclk_o,
     mosi_o => mosi_o,
     miso_i => miso_i,
+    card_present => card_present,
+    card_write_prot => card_write_prot,
     
     QspiSCK => QspiSCK,
     QspiDB => QspiDB,

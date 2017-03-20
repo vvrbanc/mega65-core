@@ -119,6 +119,8 @@ architecture behavior of cpu_test is
            sclk_o : out std_logic;
            mosi_o : out std_logic;
            miso_i : in  std_logic;
+           card_present : in std_logic;
+           card_write_prot : in std_logic;
 
            aclMISO : in std_logic;
            aclMOSI : out std_logic;
@@ -257,6 +259,8 @@ begin
       uart_tx => pmodc(2),
 
       miso_i => '1',
+      card_present => '0',
+      card_write_prot => '1',
 
       qspidb => qspidb,
       qspicsn => qspicsn,      
