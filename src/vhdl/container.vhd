@@ -74,6 +74,7 @@ entity container is
          sdClock : out std_logic;       -- (sclk_o)
          sdMOSI : out std_logic;      
          sdMISO : in  std_logic;
+         sdCardPresent : in std_logic;
 
          ---------------------------------------------------------------------------
          -- Lines for other devices that we handle here
@@ -282,6 +283,8 @@ architecture Behavioral of container is
          sclk_o : out std_logic;
          mosi_o : out std_logic;
          miso_i : in  std_logic;
+         card_present : in std_logic;
+         card_write_prot : in std_logic;
 
          ---------------------------------------------------------------------------
          -- Lines for other devices that we handle here
@@ -503,6 +506,8 @@ begin
       sclk_o => sdClock,
       mosi_o => sdMOSI,
       miso_i => sdMISO,
+      card_present => sdCardPresent,
+      card_write_prot => '0',
 
       aclMISO => aclMISO,
       aclMOSI => aclMOSI,
