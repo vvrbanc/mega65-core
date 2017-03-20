@@ -244,6 +244,7 @@ architecture behavioural of sdcardio is
   signal sd_din_taken   : std_logic;
   signal sd_din_valid    : std_logic := '0';
   signal sd_dout_taken   : std_logic := '0';
+  signal sd_fsm          : std_logic_vector(7 downto 0);
 
   
   -- IO mapped register to indicate if SD card interface is busy
@@ -332,7 +333,7 @@ begin  -- behavioural
       sclk => sclk_o,
       card_present => card_present,
       card_write_prot => card_write_prot,
-      
+      sd_fsm => sd_fsm,
       
       addr => std_logic_vector(sd_sector),
       rd =>  sd_doread,
@@ -580,6 +581,8 @@ begin  -- behavioural
             fastio_rdata(7 downto 5) <= "000";
             fastio_rdata(4 downto 2) <= unsigned(sd_error_code);
             fastio_rdata(1 downto 0) <= unsigned(sd_card_type);
+          -- @IO:GS $D686 - SD Card current FSM state
+          when x"86" => fastio_rdata <= unsigned(sd_fsm);
           -- @IO:GS $D687 - SD Card debug (sd_rdata) WILL BE REMOVED
           when x"87" => fastio_rdata <= unsigned(sd_rdata);                        
           -- @IO:GS $D688 - SD Card debug (sector_offset(7..0)) WILL BE REMOVED
