@@ -74,7 +74,7 @@ entity container is
          sdClock : out std_logic;       -- (sclk_o)
          sdMOSI : out std_logic;      
          sdMISO : in  std_logic;
-         sdCardPresent : in std_logic;
+         sdCardDetect : in std_logic;
 
          ---------------------------------------------------------------------------
          -- Lines for other devices that we handle here
@@ -506,7 +506,7 @@ begin
       sclk_o => sdClock,
       mosi_o => sdMOSI,
       miso_i => sdMISO,
-      card_present => sdCardPresent,
+      card_present => sdCardDetect,
       card_write_prot => '0',
 
       aclMISO => aclMISO,
