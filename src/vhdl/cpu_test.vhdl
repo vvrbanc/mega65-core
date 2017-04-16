@@ -47,6 +47,9 @@ architecture behavior of cpu_test is
 
   signal UART_TXD : std_logic;
   signal RsRx : std_logic;
+
+  signal keyboard_column8 : std_logic := '1';
+  signal caps_lock : std_logic := '1';
   
   signal sseg_ca : std_logic_vector(7 downto 0);
   signal sseg_an : std_logic_vector(7 downto 0);
@@ -95,10 +98,7 @@ architecture behavior of cpu_test is
            QspiCSn : out std_logic;
 
            fpga_temperature : in std_logic_vector(11 downto 0);
-
-          porta_pins : inout  std_logic_vector(7 downto 0);
-          portb_pins : inout  std_logic_vector(7 downto 0);
-           
+         
            ---------------------------------------------------------------------------
            -- IO lines to the ethernet controller
            ---------------------------------------------------------------------------
@@ -186,6 +186,14 @@ architecture behavior of cpu_test is
 
            UART_TXD : out std_logic;
            RsRx : in std_logic;
+
+           -------------------------------------------------------------------------
+           -- CIA1 ports for keyboard and joysticks
+           -------------------------------------------------------------------------
+           porta_pins : inout  std_logic_vector(7 downto 0);
+           portb_pins : inout  std_logic_vector(7 downto 0);
+           keyboard_column8 : inout std_logic;
+           caps_lock : inout std_logic;           
            
            sseg_ca : out std_logic_vector(7 downto 0);
            sseg_an : out std_logic_vector(7 downto 0)
@@ -304,6 +312,9 @@ begin
       uart_txd        => uart_txd,
       rsrx            => rsrx,
 
+      keyboard_column8 => keyboard_column8,
+      caps_lock => caps_lock,      
+      
       sseg_ca         => sseg_ca,
       sseg_an         => sseg_an);
   
