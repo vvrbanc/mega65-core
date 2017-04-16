@@ -227,6 +227,8 @@ begin
       sclk_o => sdClock,
       mosi_o => sdMOSI,
       miso_i => sdMISO,
+      card_present => '1',
+      card_write_prot => '0',
 
 --      aclMISO => aclMISO,
       aclMISO => '1',
