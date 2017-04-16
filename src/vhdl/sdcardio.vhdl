@@ -175,7 +175,7 @@ architecture behavioural of sdcardio is
       
       -- Optional debug outputs
       sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
-      sd_fsm : out std_logic_vector(7 downto 0) := "11111111" -- FSM state (see block at end of file)
+      sd_fsm : out std_logic_vector(7 downto 0) := "11111111"; -- FSM state (see block at end of file)
       sd_debug : out std_logic_vector(7 downto 0) := "11111111" -- SD communications debug
       );  end component;
 
