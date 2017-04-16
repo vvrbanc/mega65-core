@@ -156,7 +156,7 @@ architecture Behavioral of container is
   
 begin
   
-  dotclock1: component dotclock
+  dotclock1: entity work.dotclock
     port map ( clk_in1 => CLK_IN,
                clk_out1 => clock100mhz,
                -- CLK_OUT2 is good for 1920x1200@60Hz, CLK_OUT3___160
@@ -171,14 +171,14 @@ begin
 --               clk_out3 => ioclock -- also 48MHz
                );
 
-  fpgatemp0: fpgatemp
+  fpgatemp0: entity work.fpgatemp
     generic map (DELAY_CYCLES => 480)
     port map (
       rst => '0',
       clk => cpuclock,
       temp => fpga_temperature);
     
-  machine0: machine
+  machine0: entity work.machine
     port map (
       pixelclock      => pixelclock,
       pixelclock2x      => pixelclock2x,
