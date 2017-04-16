@@ -60,17 +60,6 @@ architecture behavior of cpu_test is
   signal sseg_ca : std_logic_vector(7 downto 0);
   signal sseg_an : std_logic_vector(7 downto 0);
 
-  component slowram is
-  port (address : in std_logic_vector(26 downto 0);
-        datain : in std_logic_vector(7 downto 0);
-        request_toggle : in std_logic;
-        done_toggle : out std_logic;
-        cache_address : in std_logic_vector(8 downto 0);
-        we : in std_logic;
-        cache_read_data : out std_logic_vector(150 downto 0)
-        );
-  end component;
-  
   -- Sample ethernet frame to test CRC calculation
   type ram_t is array (0 to 4095) of unsigned(7 downto 0);
    signal frame : ram_t := (
@@ -96,7 +85,7 @@ architecture behavior of cpu_test is
   signal eth_txd : unsigned(1 downto 0);
   
 begin
-  slowram0: slowram
+  slowram0: entity work.slowram
     port map(address => slowram_addr,
              datain => slowram_datain,
              we => slowram_we,

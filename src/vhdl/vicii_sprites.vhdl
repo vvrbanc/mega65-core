@@ -120,160 +120,6 @@ end vicii_sprites;
 
 architecture behavioural of vicii_sprites is
 
-  component sprite is
-    Port (
-      ----------------------------------------------------------------------
-      -- dot clock
-      ----------------------------------------------------------------------
-      pixelclock : in  STD_LOGIC;
-
-      signal sprite_number : in spritenumber;
-      
-      -- Pull sprite data in along the chain from the previous sprite (or VIC-IV)
-      signal sprite_datavalid_in : in std_logic;
-      signal sprite_bytenumber_in : in spritebytenumber;
-      signal sprite_spritenumber_in : in spritenumber;
-      signal sprite_data_in : in unsigned(7 downto 0);
-
-      signal sprite_horizontal_tile_enable : in std_logic;
-      signal sprite_bitplane_enable : in std_logic;
-      signal sprite_extended_height_enable : in std_logic;
-      signal sprite_extended_width_enable : in std_logic;
-      signal sprite_extended_height_size : in unsigned(7 downto 0);
-      
-      -- Pass sprite data out along the chain to the next sprite
-      signal sprite_datavalid_out : out std_logic;
-      signal sprite_bytenumber_out : out spritebytenumber;
-      signal sprite_spritenumber_out : out spritenumber;
-      signal sprite_data_out : out unsigned(7 downto 0);
-
-      -- which base offset for the VIC-II sprite data are we showing this raster line?
-      -- VIC-IV clocks sprite_number_for_data and each sprite replaces
-      -- sprite_data_offset with the appropriate value if the sprite number is itself
-      signal sprite_number_for_data_in : in spritenumber;
-      signal sprite_data_offset_in : in spritedatabytenumber;    
-      signal sprite_data_offset_out : out spritedatabytenumber;    
-      signal sprite_number_for_data_out : out spritenumber;
-      
-      -- Is the pixel just passed in a foreground pixel?
-      signal is_foreground_in : in std_logic;
-      signal is_background_in : in std_logic;
-      -- and what is the colour of the bitmap pixel?
-      signal x_in : in xposition;
-      signal y_in : in yposition;
-      signal border_in : in std_logic;
-      signal pixel_in : in unsigned(7 downto 0);
-      signal alpha_in : in unsigned(7 downto 0);
-      -- and information from the previous sprite
-      signal is_sprite_in : in std_logic;
-      signal sprite_colour_in : in unsigned(7 downto 0);
-      signal sprite_map_in : in std_logic_vector(7 downto 0);
-      signal sprite_fg_map_in : in std_logic_vector(7 downto 0);
-      
-      -- Pass pixel information back out, as well as the sprite colour information
-      signal is_foreground_out : out std_logic;
-      signal is_background_out : out std_logic;
-      signal x_out : out xposition;
-      signal y_out : out yposition;
-      signal border_out : out std_logic;
-      signal pixel_out : out unsigned(7 downto 0);
-      signal alpha_out : out unsigned(7 downto 0);
-      signal sprite_colour_out : out unsigned(7 downto 0);
-      signal is_sprite_out : out std_logic;
-      signal sprite_map_out : out std_logic_vector(7 downto 0);
-      signal sprite_fg_map_out : out std_logic_vector(7 downto 0);
-
-      signal sprite_enable : in std_logic;
-      signal sprite_x : in unsigned(8 downto 0);
-      signal sprite_y : in unsigned(7 downto 0);
-      signal sprite_colour : in unsigned(7 downto 0);
-      signal sprite_multi0_colour : in unsigned(7 downto 0);
-      signal sprite_multi1_colour : in unsigned(7 downto 0);
-      signal sprite_is_multicolour : in std_logic;
-      signal sprite_stretch_x : in std_logic;
-      signal sprite_stretch_y : in std_logic;
-      signal sprite_priority : in std_logic
-      
-      );
-  end component;
-
-  component bitplanes is
-    Port (
-      ----------------------------------------------------------------------
-      -- dot clock
-      ----------------------------------------------------------------------
-      pixelclock : in  STD_LOGIC;
-      ioclock : in std_logic;
-
-      signal fastio_address : in unsigned(19 downto 0);
-      signal fastio_write : in std_logic;
-      signal fastio_wdata : in unsigned(7 downto 0);
-      
-      -- Pull sprite data in along the chain from the previous sprite (or VIC-IV)
-      signal sprite_datavalid_in : in std_logic;
-      signal sprite_bytenumber_in : in spritebytenumber;
-      signal sprite_spritenumber_in : in spritenumber;
-      signal sprite_data_in : in unsigned(7 downto 0);
-
-      -- XXX Bitplane registers
-      signal bitplane_h640 : in std_logic;
-      signal bitplane_h1280 : in std_logic;
-      signal bitplane_mode_in : in std_logic;
-      signal bitplane_enables_in : in std_logic_vector(7 downto 0);
-      signal bitplane_complements_in : in std_logic_vector(7 downto 0);
-      signal bitplanes_x_start : in unsigned(7 downto 0);
-      signal bitplanes_y_start : in unsigned(7 downto 0);
-      signal bitplane_sixteen_colour_mode_flags : in std_logic_vector(7 downto 0);
-
-      
-      -- Pass sprite data out along the chain to the next sprite
-      signal sprite_datavalid_out : out std_logic;
-      signal sprite_bytenumber_out : out spritebytenumber;
-      signal sprite_spritenumber_out : out spritenumber;
-      signal sprite_data_out : out unsigned(7 downto 0);
-
-      -- which base offset for the VIC-II sprite data are we showing this raster line?
-      -- VIC-IV clocks sprite_number_for_data and each sprite replaces
-      -- sprite_data_offset with the appropriate value if the sprite number is itself
-      signal sprite_number_for_data_in : in spritenumber;
-      signal sprite_data_offset_in : in spritedatabytenumber;    
-      signal sprite_data_offset_out : out spritedatabytenumber;    
-      signal sprite_number_for_data_out : out spritenumber;
-      
-      -- Is the pixel just passed in a foreground pixel?
-      signal is_foreground_in : in std_logic;
-      signal is_background_in : in std_logic;
-      -- and what is the colour of the bitmap pixel?
-      signal x_in : in xposition;
-      signal x640_in : in xposition;
-      signal x1280_in : in xposition;
-      signal y_in : in xposition;
-      signal border_in : in std_logic;
-      signal pixel_in : in unsigned(7 downto 0);
-      signal alpha_in : in unsigned(7 downto 0);
-      -- and information from the previous sprite
-      signal is_sprite_in : in std_logic;
-      signal sprite_colour_in : in unsigned(7 downto 0);
-      signal sprite_map_in : in std_logic_vector(7 downto 0);
-      signal sprite_fg_map_in : in std_logic_vector(7 downto 0);
-      
-      -- Pass pixel information back out, as well as the sprite colour information
-      signal is_foreground_out : out std_logic;
-      signal is_background_out : out std_logic;
-      signal x_out : out xposition;
-      signal y_out : out yposition;
-      signal border_out : out std_logic;
-      signal pixel_out : out unsigned(7 downto 0);
-      signal alpha_out : out unsigned(7 downto 0);
-      signal sprite_colour_out : out unsigned(7 downto 0);
-      signal is_sprite_out : out std_logic;
-      signal sprite_map_out : out std_logic_vector(7 downto 0);
-      signal sprite_fg_map_out : out std_logic_vector(7 downto 0)
-      
-      );
-  end component;
-
-  
   signal viciii_iomode : std_logic_vector(1 downto 0) := "11";
   signal reg_key : unsigned(7 downto 0) := x"00";
   
@@ -449,7 +295,7 @@ begin
 
   -- The eight VIC-II sprites.
   -- Sprite 0 is "above" sprite 7, so sprite 7 must be the first in the chain.
-  sprite7: component sprite
+  sprite7: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from the VIC-IV
              sprite_datavalid_in => sprite_datavalid_in,
@@ -513,7 +359,7 @@ begin
              sprite_map_out => sprite_map_7_6,
              sprite_fg_map_out => sprite_fg_map_7_6
              );
-  sprite6: component sprite
+  sprite6: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_7_6,
@@ -577,7 +423,7 @@ begin
              sprite_map_out => sprite_map_6_5,
              sprite_fg_map_out => sprite_fg_map_6_5
              );
-    sprite5: component sprite
+    sprite5: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_6_5,
@@ -641,7 +487,7 @@ begin
              sprite_map_out => sprite_map_5_4,
              sprite_fg_map_out => sprite_fg_map_5_4
              );
-    sprite4: component sprite
+    sprite4: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_5_4,
@@ -705,7 +551,7 @@ begin
              sprite_map_out => sprite_map_4_3,
              sprite_fg_map_out => sprite_fg_map_4_3
              );
-    sprite3: component sprite
+    sprite3: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_4_3,
@@ -769,7 +615,7 @@ begin
              sprite_map_out => sprite_map_3_2,
              sprite_fg_map_out => sprite_fg_map_3_2
              );
-    sprite2: component sprite
+    sprite2: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_3_2,
@@ -833,7 +679,7 @@ begin
              sprite_map_out => sprite_map_2_1,
              sprite_fg_map_out => sprite_fg_map_2_1
              );
-    sprite1: component sprite
+    sprite1: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_2_1,
@@ -897,7 +743,7 @@ begin
              sprite_map_out => sprite_map_1_0,
              sprite_fg_map_out => sprite_fg_map_1_0
              );
-    sprite0: component sprite
+    sprite0: entity work.sprite
     port map(pixelclock => pixelclock,
              -- Receive sprite data chain to receive data from VIC-IV
              sprite_datavalid_in => sprite_datavalid_1_0,
@@ -962,7 +808,7 @@ begin
              sprite_fg_map_out => sprite_fg_map_0_bp
              );
 
-  bitplanes0: component bitplanes
+  bitplanes0: entity work.bitplanes
     port map(pixelclock => pixelclock,
              ioclock => ioclock,
 

@@ -123,33 +123,6 @@ architecture behavioural of ethernet is
    x"00",x"00",x"65",x"65",x"65",x"65",x"65",x"65"
    );
   
- component CRC is
-    Port 
-    (  
-      CLOCK               :   in  std_logic;
-      RESET               :   in  std_logic;
-      DATA                :   in  std_logic_vector(7 downto 0);
-      LOAD_INIT           :   in  std_logic;
-      CALC                :   in  std_logic;
-      D_VALID             :   in  std_logic;
-      CRC                 :   out std_logic_vector(7 downto 0);
-      CRC_REG             :   out std_logic_vector(31 downto 0);
-      CRC_VALID           :   out std_logic
-    );
-  end component CRC;
-  
-  component ram8x4096 IS
-    PORT (
-      clk : IN STD_LOGIC;
-      cs : IN STD_LOGIC;
-      w : IN std_logic;
-      write_address : IN integer range 0 to 4095;
-      wdata : IN unsigned(7 DOWNTO 0);
-      address : IN integer range 0 to 4095;
-      rdata : OUT unsigned(7 DOWNTO 0)
-      );
-  END component;
-
   type ethernet_state is (Idle,
                           DebugRxFrameWait,DebugRxFrame,DebugRxFrameDone,
                           SkippingFrame,
@@ -309,7 +282,7 @@ begin  -- behavioural
   -- RX buffer is written from ethernet side, so use 50MHz clock.
   -- reads are fully asynchronous, so no need for a read-side clock for the CPU
   -- side.
-  rxbuffer0: ram8x4096 port map (
+  rxbuffer0: entity work.ram8x4096 port map (
     clk => clock50mhz,
     cs => rxbuffer_cs,
     w => rxbuffer_write,
@@ -318,7 +291,7 @@ begin  -- behavioural
     address => rxbuffer_readaddress,
     rdata => fastio_rdata);  
 
-  rrnet_rxbuffer: ram8x4096 port map (
+  rrnet_rxbuffer: entity work.ram8x4096 port map (
     clk => clock50mhz,
     cs => '1',
     w => rxbuffer_write,
@@ -327,7 +300,7 @@ begin  -- behavioural
     address => rrnet_readaddress,
     rdata => rrnet_buffer_rdata);
   
-  txbuffer0: ram8x4096 port map (
+  txbuffer0: entity work.ram8x4096 port map (
     clk => clock50mhz,
     cs => '1',
     w => txbuffer_write,
@@ -336,7 +309,7 @@ begin  -- behavioural
     address => txbuffer_readaddress,
     rdata => txbuffer_rdata);  
 
-  rx_CRC : CRC
+  rx_CRC : entity work.CRC
     port map(
       CLOCK           => clock50mhz,
       RESET           => '0',
@@ -349,7 +322,7 @@ begin  -- behavioural
       CRC_VALID       => rx_crc_valid
       );
   
-  tx_CRC : CRC
+  tx_CRC : entity work.CRC
     port map(
       CLOCK           => clock50mhz,
       RESET           => '0',

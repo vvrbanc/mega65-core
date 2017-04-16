@@ -135,62 +135,6 @@ end sdcardio;
 
 architecture behavioural of sdcardio is
   
-  component sd_controller is
-    generic (
-      clockRate : integer := 50000000;		-- Incoming clock is 50MHz (can change this to 2000 to test Write Timeout)
-      slowClockDivider : integer := 64;	-- Basic clock is 25MHz, slow clock for startup is 25/64 = 390kHz
-      R1_TIMEOUT : integer := 10;			-- Number of bytes to wait before giving up on receiving R1 response
-      WRITE_TIMEOUT : integer range 0 to 999 := 500		-- Number of ms to wait before giving up on write completing
-      );
-    port (
-      cs : out std_logic;				-- To SD card
-      mosi : out std_logic;			-- To SD card
-      miso : in std_logic;			-- From SD card
-      sclk : out std_logic;			-- To SD card
-      card_present : in std_logic;	-- From socket - can be fixed to '1' if no switch is present
-      card_write_prot : in std_logic;	-- From socket - can be fixed to '0' if no switch is present, or '1' to make a Read-Only interface
-
-      rd : in std_logic;				-- Trigger single block read
-      rd_multiple : in std_logic;		-- Trigger multiple block read
-      dout : out std_logic_vector(7 downto 0);	-- Data from SD card
-      dout_avail : out std_logic;		-- Set when dout is valid
-      dout_taken : in std_logic;		-- Acknowledgement for dout
-      
-      wr : in std_logic;				-- Trigger single block write
-      wr_multiple : in std_logic;		-- Trigger multiple block write
-      din : in std_logic_vector(7 downto 0);	-- Data to SD card
-      din_valid : in std_logic;		-- Set when din is valid
-      din_taken : out std_logic;		-- Ackowledgement for din
-      
-      addr : in std_logic_vector(31 downto 0);	-- Block address
-      erase_count : in std_logic_vector(7 downto 0); -- For wr_multiple only
-
-      sd_error : out std_logic;		-- '1' if an error occurs, reset on next RD or WR
-      sd_busy : out std_logic;		-- '0' if a RD or WR can be accepted
-      sd_error_code : out std_logic_vector(2 downto 0); -- See above, 000=No error
-      
-      
-      reset : in std_logic;	-- System reset
-      clk : in std_logic;		-- twice the SPI clk (max 50MHz)
-      
-      -- Optional debug outputs
-      sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
-      sd_fsm : out std_logic_vector(7 downto 0) := "11111111"; -- FSM state (see block at end of file)
-      sd_debug : out std_logic_vector(7 downto 0) := "11111111" -- SD communications debug
-      );  end component;
-
-  component ram8x512 IS
-  PORT (
-    clk : IN STD_LOGIC;
-    cs : IN STD_LOGIC;
-    w : IN std_logic;
-    write_address : IN integer;
-    wdata : IN unsigned(7 DOWNTO 0);
-    address : IN integer;
-    rdata : OUT unsigned(7 DOWNTO 0)
-    );
-  END component;
-
   signal QspiSCKInternal : std_logic := '1';
   signal QspiCSnInternal : std_logic := '1'; 
   
@@ -327,7 +271,7 @@ begin  -- behavioural
   -- SD card controller module.
   --**********************************************************************
   
-  sd0: sd_controller
+  sd0: entity work.sd_controller
     generic map (
       -- Make slow clock REALLY slow to make sure it isn't too fast
       slowClockDivider => 200
@@ -362,7 +306,7 @@ begin  -- behavioural
   -- The SD card side writes to it as data is read from the SD card, or
   -- if the CPU requests to write to it.  When the CPU writes to it, the write
   -- request is actually passed to the SD card side, which then schedules the write.
-  sdsectorbuffer0: ram8x512
+  sdsectorbuffer0: entity work.ram8x512
     port map (
       clk => clock,
 
@@ -383,7 +327,7 @@ begin  -- behavioural
   -- SD card side needs to be able to read the F011 emulation sector buffer
   -- that is stored here (and in the buffer above).
   -- This does use an extra BRAM, and it would be nice if we could merge this.
-  sdsectorbuffer1: ram8x512
+  sdsectorbuffer1: entity work.ram8x512
     port map (
       clk => clock,
 
@@ -399,7 +343,7 @@ begin  -- behavioural
       wdata => sb_wdata
       );
 
-  f011sectorbuffer: ram8x512
+  f011sectorbuffer: entity work.ram8x512
     port map (
       clk => clock,
 

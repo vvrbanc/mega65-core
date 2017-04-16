@@ -137,334 +137,6 @@ entity iomapper is
 end iomapper;
 
 architecture behavioral of iomapper is
-  component kickstart is
-    port (
-      Clk : in std_logic;
-      address : in std_logic_vector(13 downto 0);
-      we : in std_logic;
-      cs : in std_logic;
-      data_i : in std_logic_vector(7 downto 0);
-      data_o : out std_logic_vector(7 downto 0));
-  end component;
-
-  component keymapper is  
-  port (
-    ioclock : in std_logic;
-
-    cpu_hypervisor_mode : in std_logic;
-    drive_led_out : in std_logic;
-
-    last_scan_code : out std_logic_vector(12 downto 0);
-
-    nmi : out std_logic := 'Z';
-    reset : out std_logic := 'Z';
-    hyper_trap : out std_logic := '1';
-    hyper_trap_count : out unsigned(7 downto 0) := x"00";
-    restore_up_count : out unsigned(7 downto 0) := x"00";
-    restore_down_count : out unsigned(7 downto 0) := x"00";
-
-    -- USE ASC/DIN / CAPS LOCK key to control CPU speed instead of CAPS LOCK function
-    speed_gate : out std_logic := '1';
-    speed_gate_enable : in std_logic := '1';
-    
-    -- appears as bit0 of $D607 (see C65 keyboard scan routine at $E406)
-    capslock_out : out std_logic := '1';
-    capslock_in : in std_logic;
-    
-    -- PS2 keyboard interface
-    ps2clock  : in  std_logic;
-    ps2data   : in  std_logic;
-    -- CIA1 ports
-    porta_in  : in  std_logic_vector(7 downto 0);
-    portb_in  : in  std_logic_vector(7 downto 0);
-    porta_out : out std_logic_vector(7 downto 0);
-    portb_out : out std_logic_vector(7 downto 0);
-    porta_ddr : in  std_logic_vector(7 downto 0);
-    portb_ddr : in  std_logic_vector(7 downto 0);
-
-    -- Actual physical pins for CIA1
-    porta_pins : inout std_logic_vector(7 downto 0);
-    portb_pins : inout std_logic_vector(7 downto 0);
-
-    pota_x : out unsigned(7 downto 0) := x"ff";
-    pota_y : out unsigned(7 downto 0) := x"ff";
-    potb_x : out unsigned(7 downto 0) := x"ff";    
-    potb_y : out unsigned(7 downto 0) := x"ff";
-    
-    -- read from bit1 of $D607 (see C65 keyboard scan routine at $E406)?
-    keyboard_column8_select_in : in std_logic;
-    -- and pushed out to the real keyboard
-    keyboard_column8_select_out : out std_logic;
-
-    pmod_clock : in std_logic;
-    pmod_start_of_sequence : in std_logic;
-    pmod_data_in : in std_logic_vector(3 downto 0);
-    pmod_data_out : out std_logic_vector(1 downto 0) := "ZZ";
-    
-    -- ethernet keyboard input interface for remote head mode
-    eth_keycode_toggle : in std_logic;
-    eth_keycode : in unsigned(15 downto 0)
-    );
-end component;
-
-  
-  component sid6581 is
-    port (
-      clk_1MHz			: in  std_logic;		-- main SID clock signal
-      clk32				: in  std_logic;		-- main clock signal
-      reset				: in  std_logic;		-- high active signal (reset when reset = '1')
-      cs					: in  std_logic;		-- "chip select", when this signal is '1' this model can be accessed
-      we					: in std_logic;		-- when '1' this model can be written to, otherwise access is considered as read
-      
-      addr				: in  unsigned(4 downto 0);	-- address lines
-      di					: in  unsigned(7 downto 0);	-- data in (to chip)
-      do					: out unsigned(7 downto 0);	-- data out	(from chip)
-      pot_x				: in  unsigned(7 downto 0);	-- paddle input-X
-      pot_y				: in  unsigned(7 downto 0);	-- paddle input-Y
-      audio_data		: out unsigned(17 downto 0)
-      );
-  end component;
-
-  component ethernet is
-  port (
-    clock : in std_logic;
-    clock50mhz : in std_logic;
-    reset : in std_logic;
-    irq : out std_logic := 'Z';
-
-    ---------------------------------------------------------------------------
-    -- IO lines to the ethernet controller
-    ---------------------------------------------------------------------------
-    eth_mdio : inout std_logic;
-    eth_mdc : out std_logic;
-    eth_reset : out std_logic;
-    eth_rxd : in unsigned(1 downto 0);
-    eth_txd : out unsigned(1 downto 0);
-    eth_txen : out std_logic;
-    eth_rxdv : in std_logic;
-    eth_rxer : in std_logic;
-    eth_interrupt : in std_logic;
-
-    -- Signals from the VIC-IV frame packer to supply the compressed video feed
-    buffer_moby_toggle : in std_logic := '0';
-    buffer_address : out unsigned(11 downto 0);
-    buffer_rdata : in unsigned(7 downto 0);    
-
-    ---------------------------------------------------------------------------
-    -- keyboard event capture via ethernet
-    ---------------------------------------------------------------------------    
-    eth_keycode_toggle : out std_logic;
-    eth_keycode : out unsigned(15 downto 0);
-
-    fastio_addr : in unsigned(19 downto 0);
-    fastio_write : in std_logic;
-    fastio_read : in std_logic;
-    fastio_wdata : in unsigned(7 downto 0);
-    fastio_rdata : out unsigned(7 downto 0)
-    );
-  end component;
-  
-  component sdcardio is
-    port (
-      clock : in std_logic;
-      pixelclk : in std_logic;
-      reset : in std_logic;
-
-      fpga_temperature : in std_logic_vector(11 downto 0);
-      
-      ---------------------------------------------------------------------------
-      -- fast IO port (clocked at core clock). 1MB address space
-      ---------------------------------------------------------------------------
-      fastio_addr : in unsigned(19 downto 0);
-      fastio_read : in std_logic;
-      fastio_write : in std_logic;
-      fastio_wdata : in unsigned(7 downto 0);
-      fastio_rdata : out unsigned(7 downto 0);
-
-      -- If colour RAM is mapped at $DC00-$DFFF, then don't map sector buffer
-      colourram_at_dc00 : in std_logic;
-      viciii_iomode : in std_logic_vector(1 downto 0);
-      
-      sectorbuffermapped : out std_logic;
-      sectorbuffermapped2 : out std_logic;
-      sectorbuffercs : in std_logic;
-      
-      drive_led : out std_logic := '0';
-      motor : out std_logic := '0';
-
-      -------------------------------------------------------------------------
-      -- Lines for the SDcard interface itself
-      -------------------------------------------------------------------------
-      cs_bo : out std_logic;
-      sclk_o : out std_logic;
-      mosi_o : out std_logic;
-      miso_i : in  std_logic;
-      card_present : in std_logic;
-      card_write_prot : in std_logic;
-
-      ---------------------------------------------------------------------------
-      -- Lines for other devices that we handle here
-      ---------------------------------------------------------------------------
-      -- Accelerometer
-      aclMISO : in std_logic;
-      aclMOSI : out std_logic;
-      aclSS : out std_logic;
-      aclSCK : out std_logic;
-      aclInt1 : in std_logic;
-      aclInt2 : in std_logic;
-
-      -- Microphone
-      micData : in std_logic;
-      micClk : out std_logic;
-      micLRSel : out std_logic;
-
-      -- Audio in from digital SIDs
-      leftsid_audio : in unsigned(17 downto 0);
-      rightsid_audio : in unsigned(17 downto 0);
-
-      -- Audio output
-      ampPWM : out std_logic;
-      ampPWM_l : out std_logic;
-      ampPWM_r : out std_logic;
-      ampSD : out std_logic;
-
-      -- Temperature sensor
-      tmpSDA : out std_logic;
-      tmpSCL : out std_logic;
-      tmpInt : in std_logic;
-      tmpCT : in std_logic;
-
-      ----------------------------------------------------------------------
-      -- Flash RAM for holding config
-      ----------------------------------------------------------------------
-      QspiSCK : out std_logic;
-      QspiDB : inout std_logic_vector(3 downto 0);
-      QspiCSn : out std_logic;
-      
-      last_scan_code : in std_logic_vector(12 downto 0);
-      
-      -------------------------------------------------------------------------
-      -- And general switch inputs on the FPGA board (good as place as any here)
-      -------------------------------------------------------------------------
-      sw : in std_logic_vector(15 downto 0);
-      btn : in std_logic_vector(4 downto 0)
-
-      );
-  end component;
-
-  component c65uart is
-    port (
-      pixelclock : in std_logic;
-      cpuclock : in std_logic;
-      phi0 : in std_logic;
-      reset : in std_logic;
-      irq : out std_logic := '1';
-
-      uart_rx : in std_logic;
-      uart_tx : out std_logic;
-      
-      porte_out : out std_logic_vector(1 downto 0);
-      porte_in : in std_logic_vector(1 downto 0);
-      portf : inout std_logic_vector(7 downto 0);
-      portg : in std_logic_vector(7 downto 0);
-      porth : in std_logic_vector(7 downto 0);
-      porti : in std_logic_vector(7 downto 0);
-
-      ---------------------------------------------------------------------------
-      -- fast IO port (clocked at core clock). 1MB address space
-      ---------------------------------------------------------------------------
-      fastio_address : in unsigned(19 downto 0);
-      fastio_write : in std_logic;
-      fastio_read : in std_logic;
-      fastio_wdata : in unsigned(7 downto 0);
-      fastio_rdata : out unsigned(7 downto 0)
-      );
-  end component;
-  
-  component cia6526 is
-    port (
-      cpuclock : in std_logic;
-      phi0 : in std_logic;
-      todclock : in std_logic;
-      reset : in std_logic;
-      irq : out std_logic := '1';
-
-      reg_isr_out : out unsigned(7 downto 0);
-      imask_ta_out : out std_logic;
-
-      ---------------------------------------------------------------------------
-      -- fast IO port (clocked at core clock). 1MB address space
-      ---------------------------------------------------------------------------
-      cs : in std_logic;
-      fastio_address : in unsigned(7 downto 0);
-      fastio_write : in std_logic;
-      fastio_wdata : in unsigned(7 downto 0);
-      fastio_rdata : out unsigned(7 downto 0);
-
-      portaout : out std_logic_vector(7 downto 0);
-      portaddr : out std_logic_vector(7 downto 0);
-      portain : in std_logic_vector(7 downto 0);
-      
-      portbout : out std_logic_vector(7 downto 0);
-      portbddr : out std_logic_vector(7 downto 0);
-      portbin : in std_logic_vector(7 downto 0);
-
-      flagin : in std_logic;
-
-      pcout : out std_logic;
-
-      spout : out std_logic;
-      spin : in std_logic;
-
-      countout : out std_logic;
-      countin : in std_logic);
-  end component;
-
-  component framepacker is
-    port (
-      pixelclock : in std_logic;
-      ioclock : in std_logic;
-      hypervisor_mode : in std_logic;
-      
-      pixel_stream_in : in unsigned (7 downto 0);
-      pixel_y : in unsigned (11 downto 0);
-      pixel_valid : in std_logic;
-      pixel_newframe : in std_logic;
-      pixel_newraster : in std_logic;
-
-      -- Signals for ethernet controller
-      buffer_moby_toggle : out std_logic := '0';
-      buffer_address : in unsigned(11 downto 0);
-      buffer_rdata : out unsigned(7 downto 0);    
-      
-      ---------------------------------------------------------------------------
-      -- fast IO port (clocked at CPU clock).
-      ---------------------------------------------------------------------------
-      fastio_addr : in unsigned(19 downto 0);
-      fastio_write : in std_logic;
-      fastio_read : in std_logic;
-      fastio_wdata : in unsigned(7 downto 0);
-      fastio_rdata : out unsigned(7 downto 0)
-      );
-  end component;
-
-  component farcallstack IS
-  PORT (
-    -- CPU fastio port
-    clka : IN STD_LOGIC;
-    ena : IN STD_LOGIC;
-    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    addra : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
-    dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-    -- CPU parallel push/pop port
-    clkb : IN STD_LOGIC;
-    web : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    addrb : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
-    dinb : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-    doutb : OUT STD_LOGIC_VECTOR(63 DOWNTO 0)
-    );
-  end component;
 
   signal pota_x : unsigned(7 downto 0);
   signal pota_y : unsigned(7 downto 0);
@@ -524,7 +196,7 @@ begin
 
   block1: block
   begin
-  kickstartrom : kickstart port map (
+  kickstartrom : entity work.kickstart port map (
     clk     => clk,
     address => address(13 downto 0),
     we      => w,
@@ -535,7 +207,7 @@ begin
 
   block2: block
   begin
-  framepacker0: framepacker port map (
+  framepacker0: entity work.framepacker port map (
     ioclock => clk,
     pixelclock => pixelclk,
     hypervisor_mode => cpu_hypervisor_mode,
@@ -560,7 +232,7 @@ begin
 
   block3: block
   begin
-  cia1: cia6526 port map (
+  cia1: entity work.cia6526 port map (
     cpuclock => clk,
     phi0 => phi0,
     todclock => clock50hz,
@@ -587,7 +259,7 @@ begin
 
   block4: block
   begin
-  ciatwo: cia6526 port map (
+  ciatwo: entity work.cia6526 port map (
     cpuclock => clk,
     phi0 => phi0,
     todclock => clock50hz,
@@ -610,7 +282,7 @@ begin
 
   block4b: block
   begin
-    c65uart0: c65uart port map (
+    c65uart0: entity work.c65uart port map (
       pixelclock => pixelclk,
       cpuclock => clk,
       phi0 => phi0,
@@ -638,7 +310,7 @@ begin
   
   block5: block
   begin
-  keymapper0 : keymapper port map (
+  keymapper0 : entity work.keymapper port map (
     ioclock       => clk,
     cpu_hypervisor_mode => cpu_hypervisor_mode,
     drive_led_out => drive_led_out,
@@ -690,7 +362,7 @@ begin
 
   block6: block
   begin
-  leftsid: sid6581 port map (
+  leftsid: entity work.sid6581 port map (
     clk_1MHz => phi0,
     clk32 => clk,
     reset => reset_high,
@@ -706,7 +378,7 @@ begin
 
   block7: block
   begin
-  rightsid: sid6581 port map (
+  rightsid: entity work.sid6581 port map (
     clk_1MHz => phi0,
     clk32 => clk,
     reset => reset_high,
@@ -720,7 +392,7 @@ begin
     audio_data => rightsid_audio);
   end block;
 
-  ethernet0 : ethernet port map (
+  ethernet0 : entity work.ethernet port map (
     clock50mhz => clock50mhz,
     clock => clk,
     reset => reset,
@@ -753,7 +425,7 @@ begin
     std_logic_vector(fastio_rdata) => data_o
     );
   
-  sdcard0 : sdcardio port map (
+  sdcard0 : entity work.sdcardio port map (
     pixelclk => pixelclk,
     clock => clk,
     reset => reset,
@@ -815,7 +487,7 @@ begin
 
     );
 
-  farcallstack0: farcallstack port map (
+  farcallstack0: entity work.farcallstack port map (
     clka => clk,
     ena => farcallstackcs,
     wea(0) => w,

@@ -185,17 +185,6 @@ end entity gs4510;
 
 architecture Behavioural of gs4510 is
   
-component shadowram is
-  port (Clk : in std_logic;
-        address : in integer range 0 to 131071;
-        we : in std_logic;
-        data_i : in unsigned(7 downto 0);
-        data_o : out unsigned(7 downto 0);
-        no_writes : out unsigned(7 downto 0);
-        writes : out unsigned(7 downto 0)
-        );
-end component;
-
   signal cpuspeed_internal : unsigned(7 downto 0);
 
   signal reset_drive : std_logic := '0';
@@ -1027,7 +1016,7 @@ constant mode_lut : mlut9bit := (
 
 begin
 
-  shadowram0 : shadowram port map (
+  shadowram0 : entity work.shadowram port map (
     clk     => clock,
     address => shadow_address,
     we      => shadow_write,
@@ -1036,7 +1025,7 @@ begin
     no_writes => shadow_no_write_count,
     writes => shadow_write_count);
 
-  romram0 : shadowram port map (
+  romram0 : entity work.shadowram port map (
     clk     => clock,
     address => rom_address,
     we      => rom_write,

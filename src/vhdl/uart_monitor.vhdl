@@ -88,33 +88,6 @@ entity uart_monitor is
 end uart_monitor;
 
 architecture behavioural of uart_monitor is
-  component UART_TX_CTRL is
-    Port ( SEND : in  STD_LOGIC;
-           DATA : in  STD_LOGIC_VECTOR (7 downto 0);
-           CLK : in  STD_LOGIC;
-           READY : out  STD_LOGIC;
-           UART_TX : out  STD_LOGIC);
-  end component;
-
-  component uart_rx is
-    Port ( clk : in  STD_LOGIC;
-           UART_RX : in  STD_LOGIC;
-           data : out  STD_LOGIC_VECTOR (7 downto 0);
-           data_ready : out std_logic;
-           data_acknowledge : in std_logic
-           );
-  end component;
-
-  component ram128x1k IS
-    -- NOTE: is actually 177-bits and NOT 128-bits as the name suggests
-    PORT (
-      clk : IN STD_LOGIC;
-      w : IN STD_LOGIC;
-      addr : IN integer range 0 to 1023;
-      din : IN unsigned(176 downto 0);
-      dout : OUT unsigned(176 downto 0)
-      );
-  END component;
 
   signal reset_timeout : integer range 0 to 15 := 15;
 
@@ -306,7 +279,7 @@ architecture behavioural of uart_monitor is
   
 begin
 
-  uart_tx0: UART_TX_CTRL
+  uart_tx0: entity work.UART_TX_CTRL
     port map (
       send    => tx_trigger,
       clk     => clock,
@@ -314,14 +287,14 @@ begin
       ready   => tx_ready,
       uart_tx => tx);
 
-  uart_rx0: uart_rx 
+  uart_rx0: entity work.uart_rx 
     Port map ( clk => clock,
                UART_RX => rx,
                data => rx_data,
                data_ready => rx_ready,
                data_acknowledge => rx_acknowledge);
 
-  historyram0: ram128x1k
+  historyram0: entity work.ram128x1k
     -- NOTE: is actually 177-bits and NOT 128-bits as the name suggests
     port map ( clk => clock,
                w => history_write,

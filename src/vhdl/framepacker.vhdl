@@ -56,34 +56,6 @@ end framepacker;
 
 architecture behavioural of framepacker is
   
-  -- components go here
-  component videobuffer IS
-    PORT (
-      clka : IN STD_LOGIC;
-      wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-      addra : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
-      dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-      clkb : IN STD_LOGIC;
-      addrb : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
-      doutb : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
-      );
-  END component;
-
-  component CRC is
-    Port 
-      (  
-        CLOCK               :   in  std_logic;
-        RESET               :   in  std_logic;
-        DATA                :   in  std_logic_vector(7 downto 0);
-        LOAD_INIT           :   in  std_logic;
-        CALC                :   in  std_logic;
-        D_VALID             :   in  std_logic;
-        CRC                 :   out std_logic_vector(7 downto 0);
-        CRC_REG             :   out std_logic_vector(31 downto 0);
-        CRC_VALID           :   out std_logic
-        );
-  end component CRC;
-  
   -- signals go here
   signal pixel_count : unsigned(7 downto 0) := x"00";
   signal last_pixel_value : unsigned(7 downto 0) := x"FF";
@@ -124,7 +96,7 @@ architecture behavioural of framepacker is
 
 begin  -- behavioural
 
-  videobuffer0: videobuffer port map (
+  videobuffer0: entity work.videobuffer port map (
     clka => pixelclock,
     wea(0) => output_write,
     addra => std_logic_vector(output_address),
@@ -134,7 +106,7 @@ begin  -- behavioural
     unsigned(doutb) => buffer_rdata
     );
 
-  thumnailbuffer0: videobuffer port map (
+  thumnailbuffer0: entity work.videobuffer port map (
     clka => pixelclock,
     wea(0) => '1',
     addra => std_logic_vector(thumbnail_write_address),
@@ -144,7 +116,7 @@ begin  -- behavioural
     unsigned(doutb) => thumbnail_rdata
     );
 
-  raster_crc : CRC
+  raster_crc : entity work.CRC
     port map(
       CLOCK           => pixelclock,
       RESET           => '0',
