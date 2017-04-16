@@ -560,14 +560,22 @@ begin  -- behavioural
             -- status / command register
             -- error status in bit 6 so that V flag can be used for check
             report "reading $D680 SDCARD status register" severity note;
+            -- @IO:GS $D680.7 - SD Card Status: Reserved (normally 0)
+            -- @IO:GS $D680.6 - SD Card Status: sdio_error
+            -- @IO:GS $D680.5 - SD Card Status: sdio_fsm_error
+            -- @IO:GS $D680.4 - SD Card Status: Card write-protect flag
+            -- @IO:GS $D680.3 - SD Card Status: sector_buffer_mapped
+            -- @IO:GS $D680.2 - SD Card Status: 1=Reset in progress via $00 command
+            -- @IO:GS $D680.1 - SD Card Status: Card present
+            -- @IO:GS $D680.0 - SD Card Status: sdio_busy
             fastio_rdata(7) <= '0';
             fastio_rdata(6) <= sdio_error;
             fastio_rdata(5) <= sdio_fsm_error;
-            fastio_rdata(4) <= '0';
+            fastio_rdata(4) <= 'card_write_prot;
             fastio_rdata(3) <= sector_buffer_mapped;
             fastio_rdata(2) <= sd_reset;
-            fastio_rdata(1) <= sdio_busy;  -- SD-status, is busy if asserted ??
-            fastio_rdata(0) <= sdio_busy;  -- why map to two bits?
+            fastio_rdata(1) <= card_present;
+            fastio_rdata(0) <= sdio_busy;
 
           when x"81" => fastio_rdata <= sd_sector(7 downto 0); -- SD-control, LSByte of address
           when x"82" => fastio_rdata <= sd_sector(15 downto 8); -- SD-control
