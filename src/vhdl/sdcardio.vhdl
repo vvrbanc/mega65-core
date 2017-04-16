@@ -327,7 +327,11 @@ begin  -- behavioural
   -- SD card controller module.
   --**********************************************************************
   
-  sd0: sd_controller 
+  sd0: sd_controller
+    generic map (
+      -- Make slow clock REALLY slow to make sure it isn't too fast
+      slowClockDivider => 200
+      )
     port map (
       cs => cs_bo,
       mosi => mosi_o,
