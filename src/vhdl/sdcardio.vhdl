@@ -176,6 +176,7 @@ architecture behavioural of sdcardio is
       -- Optional debug outputs
       sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
       sd_fsm : out std_logic_vector(7 downto 0) := "11111111" -- FSM state (see block at end of file)
+      sd_debug : out std_logic_vector(7 downto 0) := "11111111" -- SD communications debug
       );  end component;
 
   component ram8x512 IS
@@ -245,6 +246,7 @@ architecture behavioural of sdcardio is
   signal sd_din_valid    : std_logic := '0';
   signal sd_dout_taken   : std_logic := '0';
   signal sd_fsm          : std_logic_vector(7 downto 0);
+  signal sd_debug        : std_logic_vector(7 downto 0);
 
   
   -- IO mapped register to indicate if SD card interface is busy
@@ -334,6 +336,7 @@ begin  -- behavioural
       card_present => card_present,
       card_write_prot => card_write_prot,
       sd_fsm => sd_fsm,
+      sd_debug => sd_debug,
       
       addr => std_logic_vector(sd_sector),
       rd =>  sd_doread,
@@ -603,6 +606,9 @@ begin  -- behavioural
             fastio_rdata(0) <= sector_offset(8);
             fastio_rdata(1) <= sector_offset(9);
 
+          -- @IO:GS $D68A - SD Card communications debug WILL BE REMOVED
+          when x"8a" => fastio_rdata <= unsigned(sd_debug);
+                        
           when x"8b" =>
             -- @IO:GS $D68B - Diskimage control flags
             fastio_rdata(0) <= diskimage1_enable;

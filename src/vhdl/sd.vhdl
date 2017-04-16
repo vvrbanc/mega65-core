@@ -139,7 +139,8 @@ port (
 	
 	-- Optional debug outputs
 	sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
-	sd_fsm : out std_logic_vector(7 downto 0) := "11111111" -- FSM state (see block at end of file)
+	sd_fsm : out std_logic_vector(7 downto 0) := "11111111"; -- FSM state (see block at end of file)
+        sd_debug : out std_logic_vector(7 downto 0) := "00000000"  -- various bits of debug information
 );
 
 end sd_controller;
@@ -333,6 +334,12 @@ begin
 				sclk <= new_sclk;
 				cs <= new_cs;
 				mosi <= new_data_out(7);
+
+                                sd_debug(7) <= new_sclk;
+                                sd_debug(6) <= new_cs;
+                                sd_debug(5) <= new_data_out(7);
+                                sd_debug(0) <= miso;
+                                
 				wr_erase_count <= new_wr_erase_count;
 				-- Interface outputs
 				sd_type <= new_card_type;
@@ -999,7 +1006,7 @@ begin
 				new_clock_divider <= clock_divider - 1;
 			end if;
 
-		when SEND_RCV_CLK1 =>
+                  when SEND_RCV_CLK1 =>
 			if slow_clock=false or clock_divider=0 then
 				new_clock_divider <= slowClockDivider;
 				if (bit_counter = 0) then
