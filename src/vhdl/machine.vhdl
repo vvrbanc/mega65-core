@@ -65,6 +65,8 @@ entity machine is
          no_kickstart : in std_logic;
 
          flopled : out std_logic;
+
+         support_f018b : inout std_logic := '0';
          
          ddr_counter : in unsigned(7 downto 0);
          ddr_state : in unsigned(7 downto 0);
@@ -271,6 +273,8 @@ architecture Behavioral of machine is
       
       irq_hypervisor : in std_logic_vector(2 downto 0);  -- JBM
 
+      support_f018b : inout std_logic := '0';
+      
       no_kickstart : in std_logic;
 
       ddr_counter : in unsigned(7 downto 0);
@@ -911,6 +915,8 @@ begin
     cpuis6502 => cpuis6502,
     cpuspeed => cpuspeed,
 
+    support_f018b => support_f018b,
+    
     irq_hypervisor => sw(4 downto 2),    -- JBM
     
     ddr_state => ddr_state,

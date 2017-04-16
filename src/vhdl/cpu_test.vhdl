@@ -51,6 +51,7 @@ architecture behavior of cpu_test is
   signal amppwm_l : std_logic := '1';
   signal amppwm_r : std_logic := '1';
   signal flopled : std_logic := '0';
+  signal support_f018b : std_logic := '0';
   signal keyboard_column8 : std_logic := '1';
   signal caps_lock : std_logic := '1';
   signal porta_pins : std_logic_vector(7 downto 0) := (others => 'Z');
@@ -84,6 +85,8 @@ architecture behavior of cpu_test is
            no_kickstart : in std_logic;
 
            flopled : out std_logic;
+
+           support_f018b : inout std_logic := '0';
            
            ddr_counter : in unsigned(7 downto 0);
            ddr_state : in unsigned(7 downto 0);
@@ -325,7 +328,8 @@ begin
       caps_lock => caps_lock,
       porta_pins => porta_pins,
       portb_pins => portb_pins,
---      flopled => flopled,
+      flopled => flopled,
+      support_f018b => support_f018b,
       amppwm_l => amppwm_l,
       amppwm_r => amppwm_r,
       
