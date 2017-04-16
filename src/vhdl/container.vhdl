@@ -195,6 +195,10 @@ architecture Behavioral of container is
   signal ddr_state : unsigned(7 downto 0);
   signal ddr_counter : unsigned(7 downto 0);
 
+  signal vgaredignore : unsigned(3 downto 0);
+  signal vgagreenignore : unsigned(3 downto 0);
+  signal vgablueignore : unsigned(3 downto 0);
+  
   -- XXX We should read the real temperature and feed this to the DDR controller
   -- so that it can update timing whenever the temperature changes too much.
   signal fpga_temperature : std_logic_vector(11 downto 0) := (others => '0');
@@ -281,9 +285,12 @@ begin
       
       vsync           => vsync,
       hsync           => hsync,
-      vgared(7 downto 4)          => vgared,
-      vgagreen(7 downto 4)        => vgagreen,
-      vgablue(7 downto 4)         => vgablue,
+      vgared(7 downto 4)          => vgared(3 downto 0),
+      vgared(3 downto 0) => vgaredignore(3 downto 0),
+      vgagreen(7 downto 4)        => vgagreen(3 downto 0),
+      vgagreen(3 downto 0) => vgagreenignore(3 downto 0),
+      vgablue(7 downto 4)         => vgablue(3 downto 0),
+      vgablue(3 downto 0) => vgablueignore(3 downto 0),
 
       porta_pins => porta_pins,
       portb_pins => portb_pins,
