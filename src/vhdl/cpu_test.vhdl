@@ -48,8 +48,13 @@ architecture behavior of cpu_test is
   signal UART_TXD : std_logic;
   signal RsRx : std_logic;
 
+  signal amppwm_l : std_logic := '1';
+  signal amppwm_r : std_logic := '1';
+  signal flopled : std_logic := '0';
   signal keyboard_column8 : std_logic := '1';
   signal caps_lock : std_logic := '1';
+  signal porta_pins : std_logic_vector(7 downto 0) := (others => 'Z');
+  signal portb_pins : std_logic_vector(7 downto 0) := (others => 'Z');
   
   signal sseg_ca : std_logic_vector(7 downto 0);
   signal sseg_an : std_logic_vector(7 downto 0);
@@ -77,6 +82,8 @@ architecture behavior of cpu_test is
            nmi : in  STD_LOGIC;
 
            no_kickstart : in std_logic;
+
+           flopled : out std_logic;
            
            ddr_counter : in unsigned(7 downto 0);
            ddr_state : in unsigned(7 downto 0);
@@ -130,6 +137,8 @@ architecture behavior of cpu_test is
            aclSCK : out std_logic;
     
            ampPWM : out std_logic;
+           ampPWM_l : out std_logic;
+           ampPWM_r : out std_logic;
            ampSD : out std_logic;
 
            micData : in std_logic;
@@ -313,7 +322,12 @@ begin
       rsrx            => rsrx,
 
       keyboard_column8 => keyboard_column8,
-      caps_lock => caps_lock,      
+      caps_lock => caps_lock,
+      porta_pins => porta_pins,
+      portb_pins => portb_pins,
+--      flopled => flopled,
+      amppwm_l => amppwm_l,
+      amppwm_r => amppwm_r,
       
       sseg_ca         => sseg_ca,
       sseg_an         => sseg_an);
