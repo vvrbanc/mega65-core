@@ -578,7 +578,7 @@ begin  -- behavioural
             fastio_rdata(7) <= '0';
             fastio_rdata(6) <= sdio_error;
             fastio_rdata(5) <= sdio_fsm_error;
-            fastio_rdata(4) <= 'card_write_prot;
+            fastio_rdata(4) <= card_write_prot;
             fastio_rdata(3) <= sector_buffer_mapped;
             fastio_rdata(2) <= sd_reset;
             fastio_rdata(1) <= card_present;
