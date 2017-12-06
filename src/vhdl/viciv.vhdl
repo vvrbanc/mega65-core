@@ -295,79 +295,40 @@ architecture Behavioral of viciv is
   signal full_colour_data : unsigned(63 downto 0);
   signal paint_full_colour_data : unsigned(63 downto 0);
 
-  -- chipram access management registers
-  signal next_ramaddress : unsigned(16 downto 0);
-  signal next_ramaccess_is_screen_row_fetch : std_logic := '0';
-  signal this_ramaccess_is_screen_row_fetch : std_logic := '0';
-  signal last_ramaccess_is_screen_row_fetch : std_logic := '0';
-  signal final_ramaccess_is_screen_row_fetch : std_logic := '0';
-  signal next_ramaccess_is_glyph_data_fetch : std_logic := '0';
-  signal this_ramaccess_is_glyph_data_fetch : std_logic := '0';
-  signal last_ramaccess_is_glyph_data_fetch : std_logic := '0';
-  signal final_ramaccess_is_glyph_data_fetch : std_logic := '0';
-  signal next_ramaccess_is_sprite_data_fetch : std_logic := '0';
-  signal this_ramaccess_is_sprite_data_fetch : std_logic := '0';
-  signal last_ramaccess_is_sprite_data_fetch : std_logic := '0';
-  signal final_ramaccess_is_sprite_data_fetch : std_logic := '0';
-  signal this_ramaccess_screen_row_buffer_address : unsigned(8 downto 0);
-  signal next_ramaccess_screen_row_buffer_address : unsigned(8 downto 0);
-  signal last_ramaccess_screen_row_buffer_address : unsigned(8 downto 0);
-  signal final_ramaccess_screen_row_buffer_address : unsigned(8 downto 0);
-  signal next_screen_row_fetch_address : unsigned(16 downto 0);
-  signal this_screen_row_fetch_address : unsigned(16 downto 0);
-  signal last_screen_row_fetch_address : unsigned(16 downto 0);
-  signal final_screen_row_fetch_address : unsigned(16 downto 0);
-  signal final_ramdata : unsigned(7 downto 0);
+  -- To improve timing, and to make video rendering fully asynchronous from the
+  -- chipram, and how many wait-states it has, we use a simple transactional
+  -- model, where the badline driver and painter stream the requests, and the
+  -- request handlers then work out what to do with the provided data.
+  -- Only the memory transcation executor is allows to read and write the
+  -- underlying memories, and can add as many cycles of latency as required to
+  -- ensure that the routing and timing constraints can be easily met.
+  type chipram_request_type is (
+    -- Bad line character matrix fetches
+    ScreenRamLowByte,
+    ScreenRamHighByte,
+    -- Routine painting of character data and sprites/bitplanes
+    GlyphDataByte,
+    SpriteVectorFetch,
+    SpriteOrBitPlaneDataByte
+    );
+  type chipram_transaction is record
+    -- The actual address in chip and colour ram being requested. Both will always
+    -- be read, even if there is no need for colour ram data in a particular fetch.
+    signal ramaddress : unsigned(16 downto 0);
+    signal colourramaddress : unsigned(15 downto 0);
+    -- The bytes read from each (ramdata will be data from the charrom, when required)
+    signal ramdata : unsigned(7 downto 0);
+    signal cramdata : unsigned(7 downto 0);
 
-  -- Internal registers for drawing a single raster of character data to the
-  -- raster buffer.
-  signal character_number : unsigned(8 downto 0);
-  type vic_chargen_fsm is (Idle,
-                           FetchScreenRamLine,
-                           FetchScreenRamLine2,
-                           FetchScreenRamNext,
-                           FetchFirstCharacter,
-                           FetchNextCharacter,
-                           FetchCharHighByte,
-                           FetchTextCell,
-                           FetchTextCellColourAndSource,
-                           FetchBitmapCell,
-                           FetchBitmapData,
-                           PaintFullColourFetch,
-                           PaintMemWait,
-                           PaintMemWait2,
-                           PaintMemWait3,
-                           PaintDispatch,
-                           EndOfChargen,
-                           SpritePointerFetch,
-                           SpritePointerFetch2,
-                           SpritePointerCompute1,
-                           SpritePointerCompute,
-                           SpriteDataFetch,
-                           SpriteDataFetch2);
-  signal raster_fetch_state : vic_chargen_fsm := Idle;
-  type vic_paint_fsm is (Idle,
-                         PaintFullColour,PaintFullColourPixels,PaintFullColourDone,
-                         PaintMono,PaintMonoDrive,PaintMonoBits,
-                         PaintMultiColour,PaintMultiColourDrive,
-                         PaintMultiColourBits,PaintMultiColourHold);
-  signal paint_fsm_state : vic_paint_fsm := Idle;
-  signal paint_ready : std_logic := '0';
-  signal paint_from_charrom : std_logic;
-  signal paint_flip_horizontal : std_logic;
-  signal paint_foreground : unsigned(7 downto 0);
-  signal paint_background : unsigned(7 downto 0);
-  signal paint_mc1 : unsigned(7 downto 0);
-  signal paint_mc2 : unsigned(7 downto 0);
-  signal paint_buffer_hflip_chardata : unsigned(7 downto 0);
-  signal paint_buffer_noflip_chardata : unsigned(7 downto 0);
-  signal paint_buffer_hflip_ramdata : unsigned(7 downto 0);
-  signal paint_buffer_noflip_ramdata : unsigned(7 downto 0);
-  signal paint_buffer : unsigned(7 downto 0);
-  signal paint_bits_remaining : integer range 0 to 8;
-  signal paint_chardata : unsigned(7 downto 0);
-  signal paint_ramdata : unsigned(7 downto 0);
-
+    -- The details of why this was requested, so that we know what to do with it
+    -- once read.
+    signal reason : chipram_request_type;
+    signal object : integer range 0 to 15;   -- typically sprite/bitplane #
+    signal index : integer range 0 to 65535; -- typically data byte #
+    signal subindex : integer range 0 to 7;  -- typically bit/pixel # for
+                                             -- 16/256 colour modes
+  end record;
+      
   signal horizontal_filter : std_logic := '1';
   signal pal_simulate : std_logic := '1';
   signal shadow_mask_enable : std_logic := '1';
@@ -3442,27 +3403,20 @@ begin
         when Idle => null;
         when FetchScreenRamLine =>
           -- Make sure that painting is not in progress
-          if paint_ready='1' then
-            -- Set FSM state so that no painting occurrs, and so that we
-            -- continue to fetch the screen row.  Note that here we just
-            -- schedule the memory reads.  The data is written elsewhere.  This
-            -- helps to simplify the logic in terms of number of states in the
-            -- machine, as well as for accepting the data when it has been read.
-            paint_fsm_state <= Idle;
-            raster_fetch_state <= FetchScreenRamLine2;
-
             -- Reset screen row (bad line) state 
-            character_number <= to_unsigned(1,9);
             end_of_row_16 <= '0'; end_of_row <= '0';
-            colourramaddress <= to_unsigned(to_integer(colour_ram_base) + to_integer(first_card_of_row),16);
 
             -- Now ask for the first byte.  We indicate all details of this
             -- read so that it can be committed by the receiving side of the logic.
-            next_ramaccess_is_screen_row_fetch <= '1';
-            next_ramaccess_is_glyph_data_fetch <= '0';
-            next_ramaccess_is_sprite_data_fetch <= '0';
-            next_ramaccess_screen_row_buffer_address <= to_unsigned(0,9);
-            next_screen_row_fetch_address <= screen_row_current_address;
+            request_memory(ScreenRamByte,
+                           screen_row_current_address,
+                           to_unsigned(to_integer(colour_ram_base) + to_integer(first_card_of_row),16),
+                           0, -- byte 0
+                           0, -- subindex unused
+                           );
+            character_number <= to_unsigned(1,9);
+            screen_row_current_address <= screen_row_current_address + 1;
+            raster_fetch_state <= FetchScreenRamLineBytes;
             
             report "BADLINE, colour_ram_base=$" & to_hstring(colour_ram_base) severity note;
           end if;
@@ -3488,23 +3442,17 @@ begin
             or (sixteenbit_charset='0' and end_of_row='1') then
             -- All done, move to actual row fetch
             raster_fetch_state <= FetchFirstCharacter;
-            next_ramaccess_is_screen_row_fetch <= '0';
-            next_ramaccess_is_glyph_data_fetch <= '0';
-            next_ramaccess_is_sprite_data_fetch <= '0';
           else
             -- More to fetch, so keep scheduling the reads
-            character_number <= character_number + 1;
-            next_ramaddress <= screen_row_current_address;
-            next_ramaccess_is_screen_row_fetch <= '1';
-            next_ramaccess_is_glyph_data_fetch <= '0';
-            next_ramaccess_is_sprite_data_fetch <= '0';
-            next_ramaccess_screen_row_buffer_address <= next_ramaccess_screen_row_buffer_address + 1;
-            next_screen_row_fetch_address <= next_screen_row_fetch_address + 1;
+            request_memory(ScreenRamByte,
+                           screen_row_current_address,
+                           to_unsigned(to_integer(colour_ram_base) + to_integer(first_card_of_row),16),
+                           0, -- byte 0
+                           0, -- subindex unused
+                           );
+            screen_row_current_address <= screen_row_current_address + 1;
           end if;
         when FetchFirstCharacter =>
-          next_ramaccess_is_screen_row_fetch <= '0';
-          next_ramaccess_is_glyph_data_fetch <= '0';
-          next_ramaccess_is_sprite_data_fetch <= '0';
 
           report "ZEROing screen_ram_buffer_read_address" severity note;
           screen_ram_buffer_read_address <= to_unsigned(0,9);
@@ -3707,6 +3655,8 @@ begin
             end if;
           end if;
           -- Ask for first byte of data so that paint can commence immediately.
+          -- XXX TIMING We should avoid setting ramaddress here directly to
+          -- improve timing.
           report "setting ramaddress to $" & to_hstring("000"&glyph_data_address) & " for glyph painting." severity note;
           ramaddress <= glyph_data_address;
 
