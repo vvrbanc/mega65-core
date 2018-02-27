@@ -47,11 +47,11 @@ entity container is
          ----------------------------------------------------------------------
          -- VGA output
          ----------------------------------------------------------------------
-         vsync : out STD_LOGIC;
+         vsync : out  STD_LOGIC;
          hsync : out  STD_LOGIC;
-         vgared : buffer  UNSIGNED (3 downto 0);
-         vgagreen : buffer  UNSIGNED (3 downto 0);
-         vgablue : buffer  UNSIGNED (3 downto 0);
+         vgared : out  UNSIGNED (3 downto 0);
+         vgagreen : out  UNSIGNED (3 downto 0);
+         vgablue : out  UNSIGNED (3 downto 0);
 
          ---------------------------------------------------------------------------
          -- IO lines to the ethernet controller
@@ -103,22 +103,28 @@ entity container is
          ps2clk : in std_logic;
          ps2data : in std_logic;
 
-         ----------------------------------------------------------------------
-         -- PMOD B for input PCB
-         ----------------------------------------------------------------------
-         jblo : inout std_logic_vector(4 downto 1) := (others => 'Z');
-         jbhi : inout std_logic_vector(10 downto 7) := (others => 'Z');
-         
-         ----------------------------------------------------------------------
-         -- PMOD A for general IO while debugging and testing
-         ----------------------------------------------------------------------
-         jalo : inout std_logic_vector(4 downto 1) := (others => 'Z');
-         jahi : inout std_logic_vector(10 downto 7) := (others => 'Z');
-         jdlo : inout std_logic_vector(4 downto 1) := (others => 'Z');
-         jdhi : inout std_logic_vector(10 downto 7) := (others => 'Z');
-         jclo : inout std_logic_vector(4 downto 1) := (others => 'Z');
-         jc : inout std_logic_vector(10 downto 9) := (others => 'Z');
-         
+    ----------------------------------------------------------------------
+    -- PMODs for general IO while debugging and testing
+    ----------------------------------------------------------------------
+
+    pmodjc01 : out std_logic;
+    pmodjc02 : out std_logic;
+    pmodjc03 : out std_logic;
+    pmodjc04 : out std_logic;
+    pmodjc07 : out std_logic;
+    pmodjc08 : out std_logic;
+    pmodjc09 : out std_logic;
+    pmodjc10 : out std_logic;
+
+    pmodjd01 : out std_logic;
+    pmodjd02 : out std_logic;
+    pmodjd03 : out std_logic;
+    pmodjd04 : out std_logic;
+    pmodjd07 : out std_logic;
+    pmodjd08 : out std_logic;
+    pmodjd09 : out std_logic;
+    pmodjd10 : out std_logic;
+
          ----------------------------------------------------------------------
          -- Flash RAM for holding config
          ----------------------------------------------------------------------
@@ -186,6 +192,13 @@ architecture Behavioral of container is
   signal cpu_game : std_logic := '1';
   signal cpu_exrom : std_logic := '1';
   
+  -- internal signals that drive the VGA output port
+  signal vgared_int   : unsigned(3 downto 0);
+  signal vgagreen_int : unsigned(3 downto 0);
+  signal vgablue_int  : unsigned(3 downto 0);
+
+  -- internal signals of LSBs of 8-bit VGA,
+  -- not currently connected to anything.
   signal dummy_vgared : unsigned(3 downto 0);
   signal dummy_vgagreen : unsigned(3 downto 0);
   signal dummy_vgablue : unsigned(3 downto 0);
@@ -210,6 +223,7 @@ architecture Behavioral of container is
   signal vgagreenignore : unsigned(3 downto 0);
   signal vgablueignore : unsigned(3 downto 0);
 
+  -- currently unconnected
   signal porta_pins : std_logic_vector(7 downto 0) := (others => '1');
   signal portb_pins : std_logic_vector(7 downto 0) := (others => '1');
 
@@ -261,6 +275,7 @@ architecture Behavioral of container is
   signal sawtooth_counter : integer := 0;
   signal sawtooth_level : integer := 0;
 
+  -- internal signals to be mapped to PMOD-header
   signal lcd_pixel_strobe : std_logic;
   signal lcd_hsync : std_logic;
   signal lcd_vsync : std_logic;
@@ -347,34 +362,77 @@ begin
       irq => irq,
       nmi => nmi,
       restore_key => restore_key,
+      cpu_exrom => '1',
+      cpu_game => '1',
+      
+      no_kickstart => '0',
+
+      flopled => open,
+      flopmotor => open,
+      
+      buffereduart_rx => open, --jclo(3),
+      buffereduart_tx => open, --jclo(4),
+      buffereduart2_rx => open, --jchi(9),
+      buffereduart2_tx => open, --jchi(10),
+      buffereduart_ringindicate => '0', --jchi(8),      
+      
+      slow_access_request_toggle => slow_access_request_toggle,
+      slow_access_ready_toggle => slow_access_ready_toggle,
+      slow_access_address => slow_access_address,
+      slow_access_write => slow_access_write,
+      slow_access_wdata => slow_access_wdata,
+      slow_access_rdata => slow_access_rdata,
+      cart_access_count => x"00",      
+
       sector_buffer_mapped => sector_buffer_mapped,
 
-      -- Wire up a dummy caps_lock key on switch 8
-      caps_lock_key => sw(8),
+      vsync           => vsync,
+      hsync           => hsync,
+      
+      lcd_vsync => lcd_vsync,
+      lcd_hsync => lcd_hsync,
+      lcd_display_enable => lcd_display_enable,
+      lcd_pixel_strobe => lcd_pixel_strobe,
+      
+      vgared(7 downto 4)          => vgared_int,
+      vgared(3 downto 0)          => dummy_vgared,
+      vgagreen(7 downto 4)        => vgagreen_int,
+      vgagreen(3 downto 0)        => dummy_vgagreen,
+      vgablue(7 downto 4)         => vgablue_int,
+      vgablue(3 downto 0)         => dummy_vgablue,
 
-      fa_fire => '1',
-      fa_up =>  '1',
+      hdmi_scl => open,
+      hdmi_sda => open,
+
+      porta_pins => porta_pins,
+      portb_pins => portb_pins,
+
+      keyleft => '0',
+      keyup => '0',
+
+      keyboard_column8 => open,
+      caps_lock_key => sw(8), -- dummy caps_lock key on switch 8
+
       fa_left => '1',
-      fa_down => '1',
       fa_right => '1',
+      fa_up =>  '1',
+      fa_down => '1',
+      fa_fire => '1',
 
-      fb_fire => '1',
-      fb_up => '1',
       fb_left => '1',
-      fb_down => '1',
       fb_right => '1',
+      fb_up => '1',
+      fb_down => '1',
+      fb_fire => '1',
 
       fa_potx => '0',
       fa_poty => '0',
       fb_potx => '0',
       fb_poty => '0',
-
-      f_index => '1',
-      f_track0 => '1',
-      f_writeprotect => '1',
-      f_rdata => '1',
-      f_diskchanged => '1',
       
+      pot_drain => open,
+      pot_via_iec => open,
+
       ----------------------------------------------------------------------
       -- CBM floppy  std_logic_vectorerial port
       ----------------------------------------------------------------------
@@ -386,40 +444,7 @@ begin
       iec_atn_o => iec_atn,
       iec_data_external => iec_data_i,
       iec_clk_external => iec_clk_i,
-      
-      no_kickstart => '0',
-      
-      vsync           => vsync,
-      hsync           => hsync,
-      lcd_vsync => lcd_vsync,
-      lcd_hsync => lcd_hsync,
-      lcd_display_enable => lcd_display_enable,
-      lcd_pixel_strobe => lcd_pixel_strobe,
-      vgared(7 downto 4)          => vgared,
-      vgared(3 downto 0)          => dummy_vgared,
-      vgagreen(7 downto 4)        => vgagreen,
-      vgagreen(3 downto 0)        => dummy_vgagreen,
-      vgablue(7 downto 4)         => vgablue,
-      vgablue(3 downto 0)         => dummy_vgablue,
 
-      porta_pins => porta_pins,
-      portb_pins => portb_pins,
-      keyleft => '0',
-      keyup => '0',
-      
-      ---------------------------------------------------------------------------
-      -- IO lines to the ethernet controller
-      ---------------------------------------------------------------------------
-      eth_mdio => eth_mdio,
-      eth_mdc => eth_mdc,
-      eth_reset => eth_reset,
-      eth_rxd => eth_rxd,
-      eth_txd => eth_txd,
-      eth_txen => eth_txen,
-      eth_rxer => eth_rxer,
-      eth_rxdv => eth_rxdv,
-      eth_interrupt => eth_interrupt,
-      
       -------------------------------------------------------------------------
       -- Lines for the SDcard interface itself
       -------------------------------------------------------------------------
@@ -428,6 +453,14 @@ begin
       mosi_o => sdMOSI,
       miso_i => sdMISO,
 
+      -- floppy inputs, outputs ignored(!)
+      f_index => '1',
+      f_track0 => '1',
+      f_writeprotect => '1',
+      f_rdata => '1',
+      f_diskchanged => '1',
+
+      -- aux
       aclMISO => aclMISO,
       aclMOSI => aclMOSI,
       aclSS => aclSS,
@@ -448,36 +481,38 @@ begin
       tmpSCL => tmpSCL,
       tmpInt => tmpInt,
       tmpCT => tmpCT,
-      
+
+      ---------------------------------------------------------------------------
+      -- IO lines to the ethernet controller
+      ---------------------------------------------------------------------------
+      eth_mdio => eth_mdio,
+      eth_mdc => eth_mdc,
+      eth_reset => eth_reset,
+      eth_rxd => eth_rxd,
+      eth_txd => eth_txd,
+      eth_txen => eth_txen,
+      eth_rxer => eth_rxer,
+      eth_rxdv => eth_rxdv,
+      eth_interrupt => eth_interrupt,
+            
+      fpga_temperature => fpga_temperature,
+
       ps2data =>      ps2data,
       ps2clock =>     ps2clk,
 
-      pmod_clock => jblo(1),
-      pmod_start_of_sequence => jblo(2),
-      pmod_data_in(1 downto 0) => jblo(4 downto 3),
-      pmod_data_in(3 downto 2) => "00", -- jbhi(8 downto 7),
---      pmod_data_out => jbhi(10 downto 9),
---      pmoda(3 downto 0) => jalo(4 downto 1),
---      pmoda(7 downto 4) => jahi(10 downto 7),
+      pmod_clock => '0',             --jblo(1),
+      pmod_start_of_sequence => '0', --jblo(2),
+      pmod_data_in(1 downto 0) => "00", --jblo(4 downto 3),
+      pmod_data_in(3 downto 2) => "00", --jbhi(8 downto 7),
+      pmod_data_out => open,     --jbhi(10 downto 9),
+      pmoda(3 downto 0) => open, --jalo(4 downto 1),
+      pmoda(7 downto 4) => open, --jahi(10 downto 7),
 
-      uart_rx => jclo(1),
-      uart_tx => jclo(2),
+      uart_rx => open,  --jclo(1),
+      uart_tx => open, --jclo(2),
+
+     
       
-      slow_access_request_toggle => slow_access_request_toggle,
-      slow_access_ready_toggle => slow_access_ready_toggle,
-      slow_access_address => slow_access_address,
-      slow_access_write => slow_access_write,
-      slow_access_wdata => slow_access_wdata,
-      slow_access_rdata => slow_access_rdata,
---      cpu_exrom => cpu_exrom,      
---      cpu_game => cpu_game,      
-      -- enable/disable cartridge with sw(8)
-      cpu_exrom => '1',
-      cpu_game => '1',
-      cart_access_count => x"00",
-
-      fpga_temperature => fpga_temperature,
-
       led(12 downto 0) => led(12 downto 0),
       led(15 downto 13) => dummy,
       sw => sw,
@@ -489,21 +524,31 @@ begin
       sseg_ca => sseg_ca,
       sseg_an => sseg_an
       );
+      
+    -- connect internal signals to external pins
+    vgared   <= vgared_int;
+    vgagreen <= vgagreen_int;
+    vgablue  <= vgablue_int;
 
---  if lcd_panel_enable='1' then
-    jalo <= std_logic_vector(vgablue);
-    jahi <= std_logic_vector(vgared);
-    jblo <= std_logic_vector(vgagreen);
-    jbhi(7) <= lcd_pixel_strobe;
-    jbhi(8) <= lcd_hsync;
-    jbhi(9) <= lcd_vsync;
-    jbhi(10) <= lcd_display_enable;
---  else
---    -- XXX Not bidirectional! Widget board will most likely
---    -- not work with this.
---    pmoda_hi <= jahi(10 downto 7);
---    pmoda_lo <= jalo(4 downto 1);
---  end if;    
+    pmodjc01 <= vgablue_int(0);
+    pmodjc02 <= vgablue_int(1);
+    pmodjc03 <= vgablue_int(2);
+    pmodjc04 <= vgablue_int(3);
+
+    pmodjc07 <= vgagreen_int(0);
+    pmodjc08 <= vgagreen_int(1);
+    pmodjc09 <= vgagreen_int(2);
+    pmodjc10 <= vgagreen_int(3);
+
+    pmodjd01 <= vgared_int(0);
+    pmodjd02 <= vgared_int(1);
+    pmodjd03 <= vgared_int(2);
+    pmodjd04 <= vgared_int(3);
+
+    pmodjd07 <= lcd_pixel_strobe;
+    pmodjd08 <= lcd_hsync;
+    pmodjd09 <= lcd_vsync;
+    pmodjd10 <= lcd_display_enable;
   
   -- Hardware buttons for triggering IRQ & NMI
   irq <= not btn(0);
