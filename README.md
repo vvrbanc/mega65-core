@@ -1,5 +1,7 @@
 # MEGA65 = Enhanced c65 running in FPGA.
 
+this branch can be deleted, due to being clobbered
+
 Refer to "[./doc/index.md](./doc/index.md)" for the index file of the main DOC documentation.  
 This documentation is best viewed using the github web-interface at:  
 https://github.com/MEGA65/mega65-core/blob/master/README.md
