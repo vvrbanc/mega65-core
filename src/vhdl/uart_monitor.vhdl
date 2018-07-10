@@ -94,7 +94,8 @@ entity uart_monitor is
     monitor_irq_inhibit : out std_logic := '0';
     monitor_mem_stage_trace_mode : out std_logic := '0';
     monitor_mem_trace_mode : out std_logic := '0';
-    monitor_mem_trace_toggle : out std_logic := '0'
+    monitor_mem_trace_toggle : out std_logic := '0';
+
     );
 end uart_monitor;
 
@@ -387,6 +388,12 @@ begin
         terminal_emulator_just_sent <= '1';
         terminal_emulator_ready_counter <= 511;
         
+      else
+	monitor_char_out <= unsigned(to_std_logic_vector(char));
+	monitor_char_valid <= '0';
+
+	terminal_emulator_just_sent <= '0';
+        terminal_emulator_ready_counter <= 511;
       end if;
     end output_char;
     
@@ -699,7 +706,8 @@ begin
       end if;
       -- Clear just-sent flag only when the terminal emulator has accepted the
       -- character by marking not-ready
-      if terminal_emulator_ready = '0' then
+      if terminal_emulator_ready = '1' then
+	monitor_char_valid <= '0';
         terminal_emulator_just_sent <= '0';
       end if;
 
@@ -820,7 +828,7 @@ begin
         counter <= counter + 1;
         rx_acknowledge <= '0';
         tx_trigger <= '0';
-        monitor_char_valid <= '0';
+
 
         -- Make sure we don't leave the CPU locked
         if rx_ready='1' then
@@ -901,8 +909,10 @@ begin
               -- If there is a character waiting
               if protected_hardware_in(6)='0' then
                 in_matrix_mode <= '0';
+		rx_acknowledge <= '0';
               end if;
               if protected_hardware_in(6)='1' and in_matrix_mode = '0' then
+                -- XXX WE need to delay printing the banner to give the terminal emulator time to get ready.
                 state <= PrintBanner;
                 in_matrix_mode <= '1';
               elsif monitor_char_toggle /= monitor_char_toggle_last then
@@ -931,8 +941,6 @@ begin
               elsif uart_char_valid = '0' then
                 uart_char_processed <= '0';
               end if;
-              
-              
               if trace_continuous='1' then
                 state <= EnterPressed;
               end if;
