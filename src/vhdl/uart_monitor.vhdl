@@ -94,7 +94,7 @@ entity uart_monitor is
     monitor_irq_inhibit : out std_logic := '0';
     monitor_mem_stage_trace_mode : out std_logic := '0';
     monitor_mem_trace_mode : out std_logic := '0';
-    monitor_mem_trace_toggle : out std_logic := '0';
+    monitor_mem_trace_toggle : out std_logic := '0'
 
     );
 end uart_monitor;
@@ -828,7 +828,6 @@ begin
         counter <= counter + 1;
         rx_acknowledge <= '0';
         tx_trigger <= '0';
-
 
         -- Make sure we don't leave the CPU locked
         if rx_ready='1' then

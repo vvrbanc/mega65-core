@@ -367,6 +367,11 @@ architecture Behavioral of viciv is
   signal final_screen_row_fetch_address : unsigned(19 downto 0) := to_unsigned(0,20);
   signal final_ramdata : unsigned(7 downto 0) := to_unsigned(0,8);
 
+  signal vgared_driver : unsigned(7 downto 0);
+  signal vgagreen_driver : unsigned(7 downto 0);
+  signal vgablue_driver : unsigned(7 downto 0);
+
+  signal pixelclock_select_driver : std_logic_vector(7 downto 0) := x"bc";
   -- Internal registers for drawing a single raster of character data to the
   -- raster buffer.
   signal character_number : unsigned(8 downto 0) := to_unsigned(0,9);
@@ -2334,7 +2339,7 @@ begin
                                                   elsif register_number=80 then
                                         -- @IO:GS $D050 VIC-IV read horizontal position (LSB) (READ) xcounter
                                         -- @IO:GS $D050 VIC-IV pixel clock configuration (WRITE ONLY)
-                                                    pixelclock_select <= fastio_wdata;
+                                                    pixelclock_select_driver <= fastio_wdata;
                                                     pixelclock_select_internal <= fastio_wdata;
                                                   elsif register_number=81 then
                                         -- @IO:GS $D051 VIC-IV read horizontal position (MSB) (READ) xcounter
@@ -2477,7 +2482,7 @@ begin
                                                         vicii_max_raster <= pal_max_raster;
                                         -- Set 30MHz pixel clock for PAL
                                                         pixelclock_select_internal <= x"bc";
-                                                        pixelclock_select <= x"bc";
+                                                        pixelclock_select_driver <= x"bc";
                                         -- VSYNC is negative for 50Hz (required for some monitors)
                                                         hsync_polarity <= '0';
                                                         vsync_polarity <= '1';
@@ -2506,7 +2511,7 @@ begin
                                                         vicii_max_raster <= ntsc_max_raster;
                                         -- Set 30MHz pixel clock for PAL
                                                         pixelclock_select_internal <= x"bc";
-                                                        pixelclock_select <= x"bc";
+                                                        pixelclock_select_driver <= x"bc";
                                                         hsync_polarity <= '0';
                                                         vsync_polarity <= '1';
 
@@ -2534,7 +2539,7 @@ begin
                                                         vsync_polarity <= '0';
                                         -- Set 40MHz pixel clock for NTSC
                                                         pixelclock_select_internal <= x"3e";
-                                                        pixelclock_select <= x"3e";
+                                                        pixelclock_select_driver <= x"3e";
 
                                                         chargen_x_pixels <= 2;
                                                         chargen_x_pixels_sub <= 216/2;
@@ -2562,7 +2567,7 @@ begin
 
                                         -- Set 40MHz pixel clock for NTSC
                                                         pixelclock_select_internal <= x"3e";
-                                                        pixelclock_select <= x"3e";
+                                                        pixelclock_select_driver <= x"3e";
                                                         
                                                         chargen_x_pixels <= 2;
                                                         chargen_x_pixels_sub <= 216/2;
@@ -2588,7 +2593,7 @@ begin
 
                                         -- Set 40MHz pixel clock for NTSC
                                                         pixelclock_select_internal <= x"3e";
-                                                        pixelclock_select <= x"3e";
+                                                        pixelclock_select_driver <= x"3e";
                                                         
                                                         chargen_x_pixels <= 2;
                                                         chargen_x_pixels_sub <= 216/2;
@@ -2662,7 +2667,7 @@ begin
                                         -- @IO:GS $D07C.5 VIC-IV vsync polarity
                                                     vsync_polarity <= fastio_wdata(5);
                                         -- @IO:GS $D07C.6-7 VIC-IV pixel clock select (30,33,40 or 50MHz)
-                                                    pixelclock_select(1 downto 0) <= fastio_wdata(7 downto 6);
+                                                    pixelclock_select_driver(1 downto 0) <= fastio_wdata(7 downto 6);
                                                     pixelclock_select_internal(1 downto 0) <= fastio_wdata(7 downto 6);
                                                   elsif register_number=125 then
                                         -- @IO:GS $D07D VIC-IV debug X position (LSB)
@@ -2708,6 +2713,11 @@ begin
     variable next_glyph_colour_temp : std_logic_vector(7 downto 0) := (others => '0');
   begin    
     if rising_edge(pixelclock) and all_pause='0' then
+
+      pixelclock_select <= pixelclock_select_driver;
+      vgared <= vgared_driver;
+      vgagreen <= vgagreen_driver;
+      vgablue <= vgablue_driver;
 
       sprite_data_offsets(sprite_number_for_data_rx) <= sprite_data_offset_rx;
       -- Ask for the next one (8 sprites + 8 C65 bitplanes)
@@ -2956,11 +2966,9 @@ begin
             end if;
             
             if vicii_ycounter_phase = vicii_ycounter_max_phase then
-              if to_integer(vicii_ycounter) /= vicii_max_raster then
-                if ycounter >= vsync_delay_drive then
-                  vicii_ycounter <= vicii_ycounter + 1;
-                  vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
-                end if;
+              if to_integer(vicii_ycounter) /= vicii_max_raster and ycounter >= vsync_delay_drive then
+                 vicii_ycounter <= vicii_ycounter + 1;
+                 vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
               end if;
               vicii_ycounter_phase <= (others => '0');
               -- All visible rasters are now equal height
@@ -3501,14 +3509,14 @@ begin
              or (motor='1')) then
         report "drawing drive led OSD" severity note;
         drive_led_out <= '1';
-        vgared <= x"FF";
-        vgagreen <= x"00";
-        vgablue <= x"00";
+        vgared_driver <= x"FF";
+        vgagreen_driver <= x"00";
+        vgablue_driver <= x"00";
       else
         drive_led_out <= '0';
-        vgared <= vga_out_red(7 downto 0);
-        vgagreen <= vga_out_green(7 downto 0);
-        vgablue <= vga_out_blue(7 downto 0);
+        vgared_driver <= vga_out_red(7 downto 0);
+        vgagreen_driver <= vga_out_green(7 downto 0);
+        vgablue_driver <= vga_out_blue(7 downto 0);
       end if;
 
       --------------------------------------------------------------------------

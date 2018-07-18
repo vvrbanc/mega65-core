@@ -498,6 +498,16 @@ architecture Behavioral of machine is
   signal vgablue_viciv2 : unsigned(7 downto 0);
   signal vgared_viciv2 : unsigned(7 downto 0);
   signal vgagreen_viciv2 : unsigned(7 downto 0);
+
+  signal vgablue_viciv4_driver : unsigned(7 downto 0);
+  signal vgared_viciv4_driver : unsigned(7 downto 0);
+  signal vgagreen_viciv4_driver : unsigned(7 downto 0);
+  signal vgablue_viciv3_driver : unsigned(7 downto 0);
+  signal vgared_viciv3_driver : unsigned(7 downto 0);
+  signal vgagreen_viciv3_driver : unsigned(7 downto 0);
+  signal vgablue_viciv2_driver : unsigned(7 downto 0);
+  signal vgared_viciv2_driver : unsigned(7 downto 0);
+  signal vgagreen_viciv2_driver : unsigned(7 downto 0);
   
   signal vgablue_viciv : unsigned(7 downto 0);
   signal vgared_viciv : unsigned(7 downto 0);
@@ -756,7 +766,7 @@ begin
       phi0 => phi0,
       all_pause => all_pause,
       matrix_trap_in=>matrix_trap,
-      protected_hardware => protected_hardware_sig,
+      --protected_hardware => protected_hardware_sig,
       virtualised_hardware => virtualised_hardware_sig,
       chipselect_enables => chipselect_enables,
       mathclock => cpuclock,
@@ -1518,6 +1528,20 @@ begin
   process (cpuclock) is
   begin
     if rising_edge(cpuclock) then
+
+	protected_hardware_sig <= unsigned(sw(7 downto 0));
+
+      vgared_viciv2 <= vgared_viciv2_driver;
+      vgagreen_viciv2 <= vgagreen_viciv2_driver;
+      vgablue_viciv2 <= vgablue_viciv2_driver;
+      vgared_viciv3 <= vgared_viciv3_driver;
+      vgagreen_viciv3 <= vgagreen_viciv3_driver;
+      vgablue_viciv3 <= vgablue_viciv3_driver;
+      vgared_viciv4 <= vgared_viciv4_driver;
+      vgagreen_viciv4 <= vgagreen_viciv4_driver;
+      vgablue_viciv4 <= vgablue_viciv4_driver;
+      
+
       pmodb_in_buffer(0) <= pmod_clock;
       pmodb_in_buffer(1) <= pmod_start_of_sequence;
       pmodb_in_buffer(5 downto 2) <= pmod_data_in;
@@ -1550,17 +1574,17 @@ begin
       -- Create delayed versions of pixels
       -- (we use these for lining up the 100MHz pixel clock edges
       -- better to the 30 or 40MHz video mode pixel clocks)
-      vgared_viciv2 <= vgared_viciv;
-      vgagreen_viciv2 <= vgagreen_viciv;
-      vgablue_viciv2 <= vgablue_viciv;
+      vgared_viciv2_driver <= vgared_viciv;
+      vgagreen_viciv2_driver <= vgagreen_viciv;
+      vgablue_viciv2_driver <= vgablue_viciv;
 
-      vgared_viciv3 <= vgared_viciv2;
-      vgagreen_viciv3 <= vgagreen_viciv2;
-      vgablue_viciv3 <= vgablue_viciv2;
+      vgared_viciv3_driver <= vgared_viciv2;
+      vgagreen_viciv3_driver <= vgagreen_viciv2;
+      vgablue_viciv3_driver <= vgablue_viciv2;
 
-      vgared_viciv4 <= vgared_viciv3;
-      vgagreen_viciv4 <= vgagreen_viciv3;
-      vgablue_viciv4 <= vgablue_viciv3;
+      vgared_viciv4_driver <= vgared_viciv3;
+      vgagreen_viciv4_driver <= vgagreen_viciv3;
+      vgablue_viciv4_driver <= vgablue_viciv3;
       
     end if;
   end process;

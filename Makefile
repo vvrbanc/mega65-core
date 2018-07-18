@@ -83,7 +83,7 @@ $(OPHIS):
 $(GHDL):
 	git submodule init
 	git submodule update
-	( cd ghdl && sudo ./configure --prefix=$PWD/build && make && make install )
+	( cd ghdl && ./configure --prefix=./build && make && make install )
 
 # Not quite yet with Vivado...
 # $(BINDIR)/nexys4.mcs $(BINDIR)/nexys4ddr.mcs $(BINDIR)/lcd4ddr.mcs $(BINDIR)/touch_test.mcs
@@ -546,7 +546,7 @@ $(BINDIR)/videoproxy:	$(TOOLDIR)/videoproxy.c
 	$(CC) $(COPT) -o $(BINDIR)/videoproxy $(TOOLDIR)/videoproxy.c -I/usr/local/include -lpcap
 
 $(BINDIR)/vncserver:	$(TOOLDIR)/vncserver.c
-	$(CC) $(COPT) -o $(BINDIR)/vncserver $(TOOLDIR)/vncserver.c -I/usr/local/include -lvncserver -lpthread
+	$(CC) $(COPT) -O3 -o $(BINDIR)/vncserver $(TOOLDIR)/vncserver.c -I/usr/local/include -lvncserver -lpthread
 
 clean:
 	rm -f $(BINDIR)/KICKUP.M65 kickstart.list kickstart.map
