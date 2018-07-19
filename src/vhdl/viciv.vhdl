@@ -2929,7 +2929,8 @@ begin
               <= vicii_xcounter_sub640 + to_integer(sprite_x_scale_640);
           end if;
         end if;
-      else
+      end if;
+      if external_frame_x_zero='1' then
         -- End of raster reached.
         -- Bump raster number and start next raster.
         report "XZERO: ycounter=" & integer'image(to_integer(ycounter));
@@ -2954,74 +2955,71 @@ begin
         chargen_active <= '0';
         chargen_active_soon <= '0';
 --        if ycounter /= to_integer(frame_height) and external_frame_y_zero='0' then
-        if xcounter > 255 then
-          if external_frame_y_zero='0' then
-            report "XZERO: incrementing ycounter from " & integer'image(to_integer(ycounter));
-            ycounter <= ycounter + 1;
 
-            displaycolumn0 <= '1';
-            displayy <= displayy + 1;
-            if displayy(4)='1' then
-              displayline0 <= '0';            
-            end if;
-            
-            if vicii_ycounter_phase = vicii_ycounter_max_phase then
-              if to_integer(vicii_ycounter) /= vicii_max_raster and ycounter >= vsync_delay_drive then
-                 vicii_ycounter <= vicii_ycounter + 1;
-                 vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
-              end if;
-              vicii_ycounter_phase <= (others => '0');
-              -- All visible rasters are now equal height
-              -- (we take up the slack using vertical_flyback fast raster stepping,
-              -- and allow arbitrary setting of first raster of the VGA frame).
-              vicii_ycounter_max_phase <= vicii_ycounter_scale;
-            else
-              -- In the middle of a VIC-II logical raster, so just increase phase.
-              vicii_ycounter_phase <= vicii_ycounter_phase + 1;
-              if to_integer(vicii_ycounter_phase) =  to_integer(vicii_ycounter_max_phase(3 downto 1)) then
-                vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
-              end if;
-            end if;
+        if xcounter > 255 and external_frame_y_zero='0' then
+          report "XZERO: incrementing ycounter from " & integer'image(to_integer(ycounter));
+          ycounter <= ycounter + 1;
 
-            -- Make VIC-II triggered raster interrupts edge triggered, since one
-            -- emulated VIC-II raster is ~63*48 = ~3,000 cycles, and many C64
-            -- raster routines may finish in that time, and might get confused if
-            -- a raster interrupt gets retriggered too soon.
-            if (vicii_is_raster_source='1') and (vicii_ycounter = vicii_raster_compare(8 downto 0)) and last_vicii_ycounter /= vicii_ycounter then
-              irq_raster <= '1';
-            end if;
-            last_vicii_ycounter <= vicii_ycounter;
-            -- However, if a raster interrupt is being triggered from a VIC-IV
-            -- physical raster, then there is no need to make raster IRQs edge triggered
-            if (vicii_is_raster_source='0') and (ycounter = vicii_raster_compare) then
-              irq_raster <= '1';
-            end if;
-          else
-            -- Start of next frame
-            ycounter <= (others =>'0');
-            report "LEGACY: chargen_y_sub = 0, first_card_of_row = 0 due to start of frame";
-            chargen_y_sub <= (others => '0');
-            next_card_number <= (others => '0');
-            first_card_of_row <= (others => '0');
-
-            displayy <= (others => '0');
-            vertical_flyback <= '0';
-            displayline0 <= '1';
-            indisplay := '0';
-            report "clearing indisplay because xcounter=0" severity note;
-            screen_row_address <= screen_ram_base(19 downto 0);
-
-            -- Reset VIC-II raster counter to first raster for top of frame
-            -- (the preceeding rasters occur during vertical flyback, in case they
-            -- have interrupts triggered on them).
-            vicii_ycounter_phase <= to_unsigned(1,4);
-            vicii_ycounter <= vicii_first_raster;
-            vicii_ycounter_v400 <= (others =>'0');
-            vicii_ycounter_phase_v400 <= to_unsigned(1,4);
-
+          displaycolumn0 <= '1';
+          displayy <= displayy + 1;
+          if displayy(4)='1' then
+            displayline0 <= '0';            
           end if;
-        end if;
+            
+          if vicii_ycounter_phase = vicii_ycounter_max_phase then
+            if to_integer(vicii_ycounter) /= vicii_max_raster and ycounter >= vsync_delay_drive then
+               vicii_ycounter <= vicii_ycounter + 1;
+               vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
+            end if;
+            vicii_ycounter_phase <= (others => '0');
+            -- All visible rasters are now equal height
+            -- (we take up the slack using vertical_flyback fast raster stepping,
+            -- and allow arbitrary setting of first raster of the VGA frame).
+            vicii_ycounter_max_phase <= vicii_ycounter_scale;
+          else
+            -- In the middle of a VIC-II logical raster, so just increase phase.
+            vicii_ycounter_phase <= vicii_ycounter_phase + 1;
+            if to_integer(vicii_ycounter_phase) =  to_integer(vicii_ycounter_max_phase(3 downto 1)) then
+              vicii_ycounter_v400 <= vicii_ycounter_v400 + 1;
+            end if;
+          end if;
+
+          -- Make VIC-II triggered raster interrupts edge triggered, since one
+          -- emulated VIC-II raster is ~63*48 = ~3,000 cycles, and many C64
+          -- raster routines may finish in that time, and might get confused if
+          -- a raster interrupt gets retriggered too soon.
+          if (vicii_is_raster_source='1') and (vicii_ycounter = vicii_raster_compare(8 downto 0)) and last_vicii_ycounter /= vicii_ycounter then
+            irq_raster <= '1';
+          end if;
+          last_vicii_ycounter <= vicii_ycounter;
+          -- However, if a raster interrupt is being triggered from a VIC-IV
+          -- physical raster, then there is no need to make raster IRQs edge triggered
+          if (vicii_is_raster_source='0') and (ycounter = vicii_raster_compare) then
+            irq_raster <= '1';
+          end if;
+        elsif external_frame_y_zero='1' then
+          -- Start of next frame
+          ycounter <= (others =>'0');
+          report "LEGACY: chargen_y_sub = 0, first_card_of_row = 0 due to start of frame";
+          chargen_y_sub <= (others => '0');
+          next_card_number <= (others => '0');
+          first_card_of_row <= (others => '0');
+          displayy <= (others => '0');
+          vertical_flyback <= '0';
+          displayline0 <= '1';
+          indisplay := '0';
+          report "clearing indisplay because xcounter=0" severity note;
+          screen_row_address <= screen_ram_base(19 downto 0);
+          -- Reset VIC-II raster counter to first raster for top of frame
+          -- (the preceeding rasters occur during vertical flyback, in case they
+          -- have interrupts triggered on them).
+          vicii_ycounter_phase <= to_unsigned(1,4);
+          vicii_ycounter <= vicii_first_raster;
+          vicii_ycounter_v400 <= (others =>'0');
+          vicii_ycounter_phase_v400 <= to_unsigned(1,4);
+         end if;
       end if;
+
       
       if xcounter<frame_h_front then
         xfrontporch <= '1';

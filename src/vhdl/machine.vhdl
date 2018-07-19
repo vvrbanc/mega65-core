@@ -484,7 +484,9 @@ architecture Behavioral of machine is
 
   signal external_frame_x_zero : std_logic := '0';
   signal external_frame_y_zero : std_logic := '0';
-  
+  signal external_frame_x_zero_driver :std_logic := '0';
+  signal external_frame_y_zero_driver :std_logic := '0';
+
   signal red_n : unsigned(7 downto 0);
   signal green_n : unsigned(7 downto 0);
   signal blue_n : unsigned(7 downto 0);
@@ -590,6 +592,7 @@ architecture Behavioral of machine is
   -- local debug signals from CPU
   signal shadow_address_state_dbg_out : std_logic_vector(3 downto 0);
   signal pixelclock_select : std_logic_vector(7 downto 0);
+  signal pixelclock_select_driver :std_logic_vector(7 downto 0);
   
 begin
 
@@ -998,7 +1001,7 @@ begin
       cpuclock        => cpuclock,
       ioclock        => ioclock,
 
-      pixelclock_select => pixelclock_select,
+      pixelclock_select => pixelclock_select_driver,
       
       irq             => vic_irq,
       reset           => reset_combined,
@@ -1529,8 +1532,12 @@ begin
   begin
     if rising_edge(cpuclock) then
 
-	protected_hardware_sig <= unsigned(sw(7 downto 0));
-
+      protected_hardware_sig <= unsigned(sw(7 downto 0));
+      external_frame_x_zero <= external_frame_x_zero_driver;
+      external_frame_y_zero <= external_frame_y_zero_driver;
+      hsync <= hsync_drive;
+      vsync <= vsync_drive;
+      pixelclock_select <= pixelclock_select_driver;
       vgared_viciv2 <= vgared_viciv2_driver;
       vgagreen_viciv2 <= vgagreen_viciv2_driver;
       vgablue_viciv2 <= vgablue_viciv2_driver;
@@ -1556,8 +1563,7 @@ begin
     if rising_edge(pixelclock) then
       -- Enforce black output outside of frame, so that
       -- compositors can't mess the frame up
-      hsync <= hsync_drive;
-      vsync <= vsync_drive;
+
       viciv_outofframe_3 <= viciv_outofframe_2;
       viciv_outofframe_2 <= viciv_outofframe_1;
       viciv_outofframe_1 <= viciv_outofframe;
@@ -1624,8 +1630,8 @@ begin
       lcd_vsync1 <= not lcd_vsync_pal50;
       lcd_display_enable1 <= lcd_inframe_pal50;
       lcd_pixel_strobe1 <= clock30;
-      external_frame_x_zero <= x_zero_pal50;
-      external_frame_y_zero <= y_zero_pal50;
+      external_frame_x_zero_driver <= x_zero_pal50;
+      external_frame_y_zero_driver <= y_zero_pal50;
     else
       -- NTSC 60 Hz frame
       hsync_drive1 <= hsync_ntsc60;
@@ -1634,8 +1640,8 @@ begin
       lcd_vsync1 <= lcd_vsync_ntsc60;
       lcd_display_enable1 <= lcd_inframe_ntsc60;
       lcd_pixel_strobe1 <= clock40;
-      external_frame_x_zero <= x_zero_ntsc60;
-      external_frame_y_zero <= y_zero_ntsc60;
+      external_frame_x_zero_driver <= x_zero_ntsc60;
+      external_frame_y_zero_driver <= y_zero_ntsc60;
     end if;
   end process;
   
