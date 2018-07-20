@@ -468,6 +468,8 @@ architecture Behavioral of machine is
 
   signal hsync_pal50 : std_logic;
   signal vsync_pal50 : std_logic;
+  signal hsync_pal50_driver : std_logic;
+  signal vsync_pal50_driver : std_logic;
   signal inframe_pal50 : std_logic;
   signal lcd_vsync_pal50 : std_logic;
   signal lcd_inframe_pal50 : std_logic;
@@ -520,6 +522,9 @@ architecture Behavioral of machine is
   signal vgablue_sig : unsigned(7 downto 0);
   signal vgared_sig : unsigned(7 downto 0);
   signal vgagreen_sig : unsigned(7 downto 0);
+  signal vgablue_sig_driver : unsigned(7 downto 0);
+  signal vgared_sig_driver : unsigned(7 downto 0);
+  signal vgagreen_sig_driver : unsigned(7 downto 0);
   signal vgablue_kbd : unsigned(7 downto 0);
   signal vgared_kbd : unsigned(7 downto 0);
   signal vgagreen_kbd : unsigned(7 downto 0);
@@ -912,8 +917,8 @@ begin
                   hsync_end => 884
                   )                  
     port map ( clock => clock30,
-               hsync => hsync_pal50,
-               vsync => vsync_pal50,
+               hsync => hsync_pal50_driver,
+               vsync => vsync_pal50_driver,
                x_zero => x_zero_pal50,
                y_zero => y_zero_pal50,
                inframe => inframe_pal50,
@@ -961,9 +966,9 @@ begin
       green_i => vgagreen_source,
       blue_i => vgablue_source,
 
-      red_o => vgared_sig,
-      green_o => vgagreen_sig,
-      blue_o => vgablue_sig,      
+      red_o => vgared_sig_driver,
+      green_o => vgagreen_sig_driver,
+      blue_o => vgablue_sig_driver,      
 
       hsync_i => hsync_drive1,
       hsync_o => hsync_drive,
@@ -1535,9 +1540,15 @@ begin
       protected_hardware_sig <= unsigned(sw(7 downto 0));
       external_frame_x_zero <= external_frame_x_zero_driver;
       external_frame_y_zero <= external_frame_y_zero_driver;
+      hsync_pal50 <= hsync_pal50_driver;
+      vsync_pal50 <= vsync_pal50_driver;
       hsync <= hsync_drive;
-      vsync <= vsync_drive;
+      vsync <= vsync_drive; 
       pixelclock_select <= pixelclock_select_driver;
+      vgablue_sig <= vgablue_sig_driver;
+      vgared_sig <= vgared_sig_driver;
+      vgagreen_sig <= vgagreen_sig_driver;
+
       vgared_viciv2 <= vgared_viciv2_driver;
       vgagreen_viciv2 <= vgagreen_viciv2_driver;
       vgablue_viciv2 <= vgablue_viciv2_driver;
