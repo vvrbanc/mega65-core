@@ -443,7 +443,8 @@ begin
       aclInt1 => aclInt1,
       aclInt2 => aclInt2,
       
-      micData => micData,
+      micData0 => micData,
+      micData1 => micData,
       micClk => micClk,
       micLRSel => micLRSel,
 
