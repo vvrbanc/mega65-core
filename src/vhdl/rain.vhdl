@@ -61,6 +61,7 @@ entity matrix_rain_compositor is
     pixel_x_800 : in integer;
     pixel_x_640 : in integer;
     pixel_x_640_out : out integer;
+    lcd_in_letterbox : in std_logic;
     
     -- Remote memory access interface to visual keyboard for
     -- character set.
