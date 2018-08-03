@@ -576,15 +576,15 @@ begin  -- rtl
         -- data.  A complication is that we have to deal with
         -- contention on the BRAM interface, so we ideally need to
         -- sequence the requests a little carefully.
-        if hsync_in = '1' then
+        if pixel_x_800 = 0 then
           char_bit_count <= 0;
-          if last_hsync = '0' then
+          if last_pixel_x_800 /= 0 then
             fetch_next_char <= '1';
           end if;
           -- reset fetch address to start of line, unless
           -- we are advancing to next line
           -- XXX doesn't yet support double-high chars
-          if last_hsync = '0' then
+          if last_pixel_x_800 /= 0 then
             if char_ycounter /= 15 then
               char_screen_address <= line_screen_address;
               char_ycounter <= char_ycounter + 1;
