@@ -126,7 +126,7 @@ entity viciv is
     pixel_x_640 : out integer := 0;
     -- And pixel X counter scaled to actual video mode (typically 800)
     -- (and corrected for video pipeline depth)
-    native_x_640 : out integer := 0;
+    native_x_800 : out integer := 0;
     native_y_200 : out integer := 0;
     native_y_400 : out integer := 0;
     -- Scale for 200 and 400px high modes (used by compositors)
@@ -2771,7 +2771,7 @@ begin
 
       -- XXX Why do we need these fudge factors to make everything line up?
       -- Subtract 10 for video pipeline depth?
-      native_x_640 <= to_integer(vicii_xcounter_640 - 10);
+      native_x_800 <= to_integer(vicii_xcounter_640 - 10);
       -- Subtract 34 for some reason?
       native_y_200 <= to_integer(vicii_ycounter - 34);
       native_y_400 <= to_integer(displayy);

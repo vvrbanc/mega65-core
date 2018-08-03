@@ -58,6 +58,7 @@ entity matrix_rain_compositor is
     ycounter_out : out unsigned(11 downto 0);
     -- Scaled horizontal position (for virtual 640H
     -- operation, regardless of physical video mode)
+    pixel_x_800 : in integer;
     pixel_x_640 : in integer;
     pixel_x_640_out : out integer;
     
@@ -136,7 +137,7 @@ architecture rtl of matrix_rain_compositor is
   signal lfsr_advance_counter : integer range 0 to 31 := 0;
   signal last_hsync : std_logic := '1';
   signal last_vsync : std_logic := '1';
-  signal last_pixel_x_640 : integer := 0;
+  signal last_pixel_x_800 : integer := 0;
   
   signal drop_start : integer range 0 to 63 := 1;
   signal drop_end : integer range 0 to 63 := 1;
@@ -249,9 +250,9 @@ begin  -- rtl
       drop_row <= (to_integer(ycounter_in)+0)/16;
 
       if matrix_fetch_chardata = '1' then
-        if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+        if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
           report
-            "x=" & integer'image(pixel_x_640) & ": " &
+            "x=" & integer'image(pixel_x_800) & ": " &
             "Reading char data = $" & to_hstring(screenram_rdata); 
         end if;
         next_char_bits <= std_logic_vector(screenram_rdata);
@@ -264,9 +265,9 @@ begin  -- rtl
       -- This module must draw the matrix rain, as well as the matrix mode text
       -- mode terminal interface.
 
-      if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+      if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
         report
-          "x=" & integer'image(pixel_x_640) & ": " &
+          "x=" & integer'image(pixel_x_800) & ": " &
           "ycounter_in = " & integer'image(to_integer(ycounter_in))
           & ", char_ycounter = " & integer'image(to_integer(char_ycounter))
           & ", char_bit_count = " & integer'image(char_bit_count);
@@ -289,9 +290,9 @@ begin  -- rtl
         end if;
         screenram_we <= '0';
         screenram_busy := '1';
-        if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+        if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
           report
-            "x=" & integer'image(pixel_x_640) & ": " &
+            "x=" & integer'image(pixel_x_800) & ": " &
             "Fetching character from address $"
             & to_hstring(char_screen_address);
         end if;
@@ -306,17 +307,17 @@ begin  -- rtl
                           +to_integer(char_ycounter(3 downto 1));
         screenram_we <= '0';
         screenram_busy := '1';
-        if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+        if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
           report
-            "x=" & integer'image(pixel_x_640) & ": " &
+            "x=" & integer'image(pixel_x_800) & ": " &
             "Reading char #$" & to_hstring(screenram_rdata);
         end if;
       else
         if matrix_fetch_chardata = '1' then
           matrix_fetch_chardata <= '0';
-          if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+          if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
             report
-              "x=" & integer'image(pixel_x_640) & ": " &
+              "x=" & integer'image(pixel_x_800) & ": " &
               "Reading next_char_bits = $"
               & to_hstring(screenram_rdata);
           end if;
@@ -566,7 +567,7 @@ begin  -- rtl
         end if;
       end if;
 
-      last_pixel_x_640 <= pixel_x_640;
+      last_pixel_x_800 <= pixel_x_800;
       if true then
         -- Text terminal display
         -- We need to read the current char cell to know which
@@ -595,9 +596,9 @@ begin  -- rtl
           end if;
         elsif char_bit_count = 0 then
           -- Request next character
-          if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+          if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
             report
-              "x=" & integer'image(pixel_x_640) & ": " &
+              "x=" & integer'image(pixel_x_800) & ": " &
               "char_bits becomes $" & to_hstring(next_char_bits);
           end if;
           char_bits <= std_logic_vector(next_char_bits);
@@ -607,13 +608,13 @@ begin  -- rtl
           char_bit_count <= 16;
         else
           -- rotate bits for terminal chargen every 2 640H pixels
-          if (pixel_x_640 mod 2) = 0 and char_bit_count /= 1
-            and pixel_x_640 /= last_pixel_x_640 then
+          if (pixel_x_800 mod 2) = 0 and char_bit_count /= 1
+            and pixel_x_800 /= last_pixel_x_800 then
             char_bits(7 downto 1) <= char_bits(6 downto 0);
             char_bits(0) <= char_bits(7);
           end if;
-          if pixel_x_640 /= last_pixel_x_640 
-            and pixel_x_640 /= last_pixel_x_640 then
+          if pixel_x_800 /= last_pixel_x_800 
+            and pixel_x_800 /= last_pixel_x_800 then
             char_bit_count <= char_bit_count - 1;
           end if;
         end if; 
@@ -718,13 +719,13 @@ begin  -- rtl
           glyph_bit_count <= 16;
         else
           -- rotate bits for rain chargen
-          if (pixel_x_640 mod 2) = 0 and char_bit_count /= 1
-            and pixel_x_640 /= last_pixel_x_640 then
+          if (pixel_x_800 mod 2) = 0 and char_bit_count /= 1
+            and pixel_x_800 /= last_pixel_x_800 then
             glyph_bits(6 downto 0) <= glyph_bits(7 downto 1);
             glyph_bits(7) <= glyph_bits(0);
           end if;
-          if pixel_x_640 /= last_pixel_x_640 
-            and pixel_x_640 /= last_pixel_x_640 then
+          if pixel_x_800 /= last_pixel_x_800 
+            and pixel_x_800 /= last_pixel_x_800 then
             glyph_bit_count <= glyph_bit_count - 1;
           end if;
         end if;
@@ -742,9 +743,9 @@ begin  -- rtl
       end if;
 
       -- Now that we know what we want to display, actually display it.
-      if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+      if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
         report
-          "x=" & integer'image(pixel_x_640) & ": " &
+          "x=" & integer'image(pixel_x_800) & ": " &
           "source = " & feed_t'image(feed);
       end if;
       case feed is
@@ -759,9 +760,9 @@ begin  -- rtl
 --          vgared_out <= vgared_matrix;
 --          vgagreen_out <= vgagreen_matrix;
 --          vgablue_out <= vgablue_matrix;
-          if pixel_x_640 >= debug_x and pixel_x_640 < (debug_x+10) then
+          if pixel_x_800 >= debug_x and pixel_x_800 < (debug_x+10) then
             report
-              "x=" & integer'image(pixel_x_640) & ": " &
+              "x=" & integer'image(pixel_x_800) & ": " &
               "  pixel_out = " & std_logic'image(char_bits(7))
               & ", char_bits=%" & to_string(char_bits);
           end if;

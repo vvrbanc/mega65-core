@@ -439,7 +439,7 @@ architecture Behavioral of machine is
   signal pixel_strobe : std_logic;  -- 0-799 across physical display for framepacker
   signal pixel_newframe : std_logic;
   signal pixel_newraster : std_logic;
-  signal native_x_640 : integer;
+  signal native_x_800 : integer;
   signal native_y_200 : integer;
   signal native_y_400 : integer;
   signal pixel_x_640 : integer;
@@ -1040,7 +1040,7 @@ begin
       pixel_valid => pixel_valid,
       pixel_newframe => pixel_newframe,
       pixel_newraster => pixel_newraster,
-      native_x_640 => native_x_640,
+      native_x_800 => native_x_800,
       native_y_200 => native_y_200,
       native_y_400 => native_y_400,
       pixel_x_640 => pixel_x_640,
@@ -1400,6 +1400,7 @@ begin
 
     hsync_in => hsync_drive,
     vsync_in => vsync_drive,
+    pixel_x_800 => native_x_800,
     pixel_x_640 => pixel_x_640,
     pixel_y_scale_200 => pixel_y_scale_200,
     pixel_y_scale_400 => pixel_y_scale_400,
@@ -1417,7 +1418,7 @@ begin
     );
 
     visual_keyboard0 : entity work.visual_keyboard port map(
-    native_x_640 => native_x_640,
+    native_x_800 => native_x_800,
     native_y_200 => native_y_200,
     native_y_400 => native_y_400,
     pixel_x_640_in => pixel_x_640,
