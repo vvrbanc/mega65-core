@@ -7,7 +7,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set project_name "nexys4ddr"
+set project_name "nocpu"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -15,7 +15,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "nexys4ddr.tcl"
+set script_file "nocpu.tcl"
 
 # Help information for this script
 proc help {} {
