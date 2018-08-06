@@ -10,6 +10,7 @@ end test_matrix;
 
 architecture behavioral of test_matrix is
 
+  signal pixel_x_800 : integer := 0;
   signal pixel_x_640 : integer := 0;
   signal native_x_640 : integer :=0;
   signal native_y_200 : integer :=0;
@@ -37,6 +38,8 @@ architecture behavioral of test_matrix is
   signal char_in : unsigned(7 downto 0) := x"00";
   signal char_valid : std_logic := '0';
   signal term_ready : std_logic;
+
+  signal lcd_in_letterbox : std_logic := '1';
   
 begin
   kc0: entity work.matrix_rain_compositor
@@ -51,6 +54,8 @@ begin
       pixel_y_scale_400 => to_unsigned(1,4),
       terminal_emulator_ready => term_ready,
       pixel_x_640 => pixel_x_640,
+      pixel_x_800 => pixel_x_800,
+      lcd_in_letterbox => lcd_in_letterbox,
       ycounter_in => ycounter_in,
       hsync_in => hsync,
       vsync_in => vsync,
@@ -71,7 +76,7 @@ begin
     );
   
   vk0: entity work.visual_keyboard port map (
-    native_x_640 => native_x_640,
+    native_x_800 => native_x_640,
     native_y_200 => native_y_200,
     native_y_400 => native_y_400,
     pixel_x_640_in => pixel_x_640,
@@ -128,6 +133,8 @@ begin
       end loop;
     end procedure;
   begin
+    wait for 10 us;
+    lcd_in_letterbox <= '0';
     wait for 1 us;
     -- Enter header
     type_char(character'val(14));
@@ -203,13 +210,13 @@ begin
       wait for 10 ns;
       pixelclock <= '0';
       wait for 10 ns;
-      if pixel_x_640 < 810 then
-        pixel_x_640 <= pixel_x_640 + 1;
-        if pixel_x_640 = 800 then
+      if pixel_x_800 < 810 then
+        pixel_x_800 <= pixel_x_800 + 1;
+        if pixel_x_800 = 800 then
           hsync <= '1';
         end if;
       else
-        pixel_x_640 <= 0;
+        pixel_x_800 <= 0;
         hsync <= '0';
         if ycounter_in < 485 then
           ycounter_in <= ycounter_in + 1;
@@ -221,7 +228,7 @@ begin
           vsync <= '0';
         end if;
       end if;
-      report "PIXEL:" & integer'image(pixel_x_640)
+      report "PIXEL:" & integer'image(pixel_x_800)
         & ":" & integer'image(to_integer(ycounter_in))
         & ":" & to_hstring(vgared_out)
         & ":" & to_hstring(vgagreen_out)
