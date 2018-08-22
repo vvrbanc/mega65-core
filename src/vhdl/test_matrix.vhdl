@@ -191,7 +191,6 @@ begin
               & "  header 4" & lf & cr
               & "  header 5" & lf & cr
               & character'val(128+14));
-
     wait for 2 sec;
   end process;
 

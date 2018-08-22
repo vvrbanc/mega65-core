@@ -475,7 +475,9 @@ begin  -- rtl
               & ", te_cursor_x = " & integer'image(te_cursor_x)
               & ", te_cursor_y = " & integer'image(te_cursor_y)
               & ", te_screen_start = "
-              & integer'image(te_screen_start);
+              & integer'image(te_screen_start)
+              & ", te_header_start = "
+              & integer'image(te_header_start);
             screenram_addr <= te_cursor_address;
             screenram_wdata <= monitor_char_in;
             -- Prevent overwriting font
@@ -882,7 +884,7 @@ begin  -- rtl
         lfsr_advance(1 downto 0) <= "11";        
         lfsr_advance(3 downto 0) <= "1111";        
       end if;
-      if last_letterbox = '1' and lcd_in_letterbox = '0' then
+      if last_letterbox = '0' and lcd_in_letterbox = '1' then
         -- Vertical flyback = start of next frame
         report "Resetting at end of flyback";
 

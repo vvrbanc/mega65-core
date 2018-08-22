@@ -3119,7 +3119,7 @@ begin
       lcd_vsync <= vsync_drive;
       -- LCD letter box starts after half the excess raster lines are gone, so
       -- that it is vertically centred on the 800x480 display.
-      if to_integer(ycounter) = (to_integer(vsync_delay_drive) + (to_integer(display_height) - 480)/2) then
+      if to_integer(ycounter) = (to_integer(vsync_delay_drive) + (to_integer(display_height) - 355)/2) then
         lcd_in_letterbox_internal <= '1';
       elsif vertical_flyback = '1' then
         lcd_in_letterbox_internal <= '0';

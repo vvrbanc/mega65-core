@@ -198,7 +198,7 @@ architecture behavioural of uart_monitor is
   constant requestTimeoutMessage : string := crlf & "?REQUEST TIMEOUT  ERROR" & crlf;
   constant replyTimeoutMessage : string := crlf & "?REPLY TIMEOUT  ERROR" & crlf;
 
-  constant registerMessage : string := crlf & "PC   A  X  Y  Z  B  SP   MAPL MAPH LAST-OP     P  P-FLAGS   RGP uS IO" & crlf;
+  constant registerMessage : string := crlf & "PC   A X  Y Z  B  SP   MAPL MAPH LAST-OP P  P-FLAGS   RGP uS IO" & crlf;
   
   type monitor_state is (Reseting,
                          PrintBanner,
@@ -1454,7 +1454,7 @@ begin
             when ShowRegisters5 =>
               -- Accumulator
               print_hex_byte(history_buffer(15 downto 8),ShowRegisters6);
-            when ShowRegisters6 => try_output_char(' ',ShowRegisters7);
+            when ShowRegisters6 => state <= ShowRegisters7; --try_output_char(' ',ShowRegisters7);
             when ShowRegisters7 =>
               -- X Register
               print_hex_byte(history_buffer(23 downto 16),ShowRegisters8);
@@ -1462,7 +1462,7 @@ begin
             when ShowRegisters9 =>
               -- Y Register
               print_hex_byte(history_buffer(31 downto 24),ShowRegisters10);
-            when ShowRegisters10 => try_output_char(' ',ShowRegisters11);
+            when ShowRegisters10 => state <= ShowRegisters11; --try_output_char(' ',ShowRegisters11);
             when ShowRegisters11 =>
               -- Z register
               print_hex_byte(history_buffer(39 downto 32),ShowRegisters12);
