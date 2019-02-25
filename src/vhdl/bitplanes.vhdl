@@ -322,7 +322,7 @@ begin  -- behavioural
       end if;      
       
       if sprite_number_for_data_in > 7 then
-        -- Tell VIC-IV our current bitplane data offsets
+        -- Tell VIC-IV our  bitplane data offsets
         sprite_data_offset_out <= bitplane_data_offsets(sprite_number_for_data_in mod 8);
       else
         sprite_data_offset_out <= sprite_data_offset_in;
@@ -344,10 +344,17 @@ begin  -- behavioural
 
         bitplanedata_fetching <= '1';
         bitplanedata_fetch_bitplane <= current_data_fetch - 1;
-        bitplanedatabuffer_address <= (current_data_fetch - 1)*512 + bitplanes_byte_number;
-        bitplanedata_fetch_column <= bitplanes_byte_number;
-	current_data_fetch <= current_data_fetch - 1;
-
+        -- PGS 20190225: Bitplane 7 gets the data late, which causes it to be
+        -- shifted right 8 pixels.  Thus we always fetch bitplane 8's next byte
+        -- instead of current one, to correct this.
+        if current_data_fetch /= 8 then
+          bitplanedatabuffer_address <= (current_data_fetch - 1)*512 + bitplanes_byte_number;          
+          bitplanedata_fetch_column <= bitplanes_byte_number;
+        else
+          bitplanedatabuffer_address <= (current_data_fetch - 1)*512 + bitplanes_byte_number + 1;          
+          bitplanedata_fetch_column <= bitplanes_byte_number + 1;
+        end if;
+        current_data_fetch <= current_data_fetch - 1;          
       elsif (bitplanes_data_request(7) = '1') and (fetch_ongoing = '0') then
 
         fetch_ongoing <= '1';
