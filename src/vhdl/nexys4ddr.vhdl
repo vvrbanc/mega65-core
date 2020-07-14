@@ -123,7 +123,7 @@ entity container is
          ----------------------------------------------------------------------
          -- Flash RAM for holding config
          ----------------------------------------------------------------------
-         QspiDB : inout std_logic_vector(3 downto 0);
+         QspiDB : inout unsigned(3 downto 0) := (others => '0');
          QspiCSn : out std_logic;
          
          ----------------------------------------------------------------------
@@ -192,10 +192,11 @@ architecture Behavioral of container is
   
   signal pixelclock : std_logic;
   signal cpuclock : std_logic;
-  signal clock240 : std_logic;
-  signal clock120 : std_logic;
   signal ethclock : std_logic;
-  signal clock200 : std_logic;
+  signal clock27 : std_logic;
+  signal clock100 : std_logic;
+  signal clock162 : std_logic;
+
   signal clock30 : std_logic;
   signal clock30in : std_logic := '0';
   signal clock30count : integer range 0 to 2 := 0;
@@ -313,15 +314,14 @@ begin
              );
 -- End of STARTUPE2_inst instantiation
 
-  
   dotclock1: entity work.dotclock100
     port map ( clk_in1 => CLK_IN,
-               clock80 => pixelclock, -- 80MHz
-               clock40 => cpuclock, -- 40MHz
+               clock100 => clock100,
+               clock81 => pixelclock, -- 80MHz
+               clock41 => cpuclock, -- 40MHz
                clock50 => ethclock,
-               clock200 => clock200,
-               clock120 => clock120,
-               clock240 => clock240
+               clock162 => clock162,
+               clock27 => clock27
                );
 
   fpgatemp0: fpgatemp
@@ -393,10 +393,9 @@ begin
       cpuclock        => cpuclock,
       uartclock       => cpuclock, -- Match CPU clock
       ioclock         => cpuclock, -- Match CPU clock
-      clock240 => clock240,
-      clock120 => clock120,
-      clock40 => cpuclock,
-      clock200 => clock200,
+      clock162 => clock162,
+      clock100 => clock100,
+      clock27 => clock27,
       clock50mhz      => ethclock,
       btncpureset => btncpureset,
       reset_out => reset_out,
@@ -451,10 +450,10 @@ begin
       no_hyppo => '0',
       
       vsync           => vsync,
-      hsync           => hsync,
+      vga_hsync           => hsync,
       lcd_vsync => lcd_vsync,
       lcd_hsync => lcd_hsync,
-      lcd_display_enable => lcd_display_enable,
+      lcd_dataenable => lcd_display_enable,
       vgared(7 downto 0)          => buffer_vgared,
       vgagreen(7 downto 0)        => buffer_vgagreen,
       vgablue(7 downto 0)         => buffer_vgablue,
@@ -527,7 +526,7 @@ begin
 
       widget_matrix_col => "11111111",
       widget_restore => '1',
-      widget_capslock => '0',
+      widget_capslock => '1',
       widget_joya => "11111",
       widget_joyb => "11111",     
       
@@ -551,6 +550,8 @@ begin
       -- enable/disable cartridge with sw(8)
       cpu_exrom => '1',
       cpu_game => '1',
+
+      -- enable/disable cartridge with sw(8)
       cart_access_count => x"00",
 
       fpga_temperature => fpga_temperature,
@@ -573,31 +574,12 @@ begin
   restore_key <= not btn(1);
 
   -- Push correct clock to LCD panel
-  jbhi(7) <= not clock30 when pal50_select='1' else not cpuclock;
+  jbhi(7) <= clock27;
 
 
-  -- Create BUFG'd 30MHz clock for LCD panel
-  --------------------------------------
-  clkin30_buf : IBUFG
-  port map
-   (O => clock30,
-    I => clock30in);
-  
-  process (clock240)
+  process (cpuclock,pixelclock,clock30,cpuclock,pal50_select)
   begin
-    if rising_edge(clock240) then
-      if (clock30count /= 2 ) then
-        clock30count <= clock30count + 1;
-      else
-        clock30in <= not clock30in;
-        clock30count <= 0;
-      end if;
-    end if;
-  end process;
-  
-  process (cpuclock,clock120,clock30,cpuclock,pal50_select)
-  begin
-    if rising_edge(clock120) then
+    if rising_edge(pixelclock) then
       if sw(7)='0' then
         -- VGA direct output
         vgared <= buffer_vgared(7 downto 4);
@@ -608,14 +590,6 @@ begin
         vgagreen <= to_unsigned(sawtooth_counter,4);
         vgablue <= to_unsigned(sawtooth_counter,4);
       end if;
-
-      -- VGA out on LCD panel
-      jalo <= std_logic_vector(buffer_vgablue(7 downto 4));
-      jahi <= std_logic_vector(buffer_vgared(7 downto 4));
-      jblo <= std_logic_vector(buffer_vgagreen(7 downto 4));
-      jbhi(8) <= lcd_hsync;
-      jbhi(9) <= lcd_vsync;
-      jbhi(10) <= lcd_display_enable;
     end if;
 
     if rising_edge(cpuclock) then
@@ -652,7 +626,7 @@ begin
     end if;
   end process;
 
-  -- 50MHz clock to ethernet controller
-  eth_clock <= ethclock;
+  -- Ethernet clock is now just the CPU clock, since both are on 50MHz
+  eth_clock <= cpuclock;
   
 end Behavioral;

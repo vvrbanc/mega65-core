@@ -130,6 +130,7 @@ set files [list \
  "[file normalize "$origin_dir/src/vhdl/pcm_clock.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/pcm_transceiver.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/touch.vhdl"]"\
+ "[file normalize "$origin_dir/src/vhdl/pdm_to_pcm.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/i2c_master.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/i2c_wrapper.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/mfm_bits_to_bytes.vhdl"]"\
@@ -172,6 +173,7 @@ set files [list \
  "[file normalize "$origin_dir/src/vhdl/expansion_port_controller.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/machine.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/fpgatemp.vhd"]"\
+ "[file normalize "$origin_dir/src/vhdl/reconfig.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/ddrwrapper.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/nexys4ddr.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/rain.vhdl"]"\
@@ -189,6 +191,7 @@ set files [list \
  "[file normalize "$origin_dir/src/vhdl/lfsr16.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/ram32x1024.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/internal1541.vhdl"]"\
+ "[file normalize "$origin_dir/src/vhdl/m6522.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/driverom.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/dpram8x4096.vhdl"]"\
  "[file normalize "$origin_dir/src/vhdl/kb_matrix_ram.vhdl"]"\
@@ -231,6 +234,10 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
 set file "vhdl/uart_charrom.vhdl"
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "VHDL" -objects $file_obj
+
+set file "vhdl/reconfig.vhdl"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
